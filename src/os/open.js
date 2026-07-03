@@ -45,5 +45,8 @@ export function openItem(item, ctx = {}) {
     case 'stub':
       openWindow({ appId: 'stub', key: `stub:${item.id}`, title: item.name, props: { message: item.message }, w: 360, h: 210 });
       break;
+    case 'exe':
+      openWindow({ appId: 'exe', key: `exe:${item.id}`, title: item.name, props: { exeId: item.id }, w: 380, h: 240 });
+      break;
   }
 }

@@ -13,7 +13,8 @@
   const soundItems = $derived(items.filter((it) => it.kind === 'audio'));
   const visualItems = $derived(items.filter((it) => it.kind === 'image' || it.kind === 'video'));
   const noteItems = $derived(items.filter((it) => it.kind === 'note'));
-  const otherItems = $derived(items.filter((it) => !['audio', 'image', 'video', 'note'].includes(it.kind)));
+  const exeItems = $derived(items.filter((it) => it.kind === 'exe'));
+  const otherItems = $derived(items.filter((it) => !['audio', 'image', 'video', 'note', 'exe'].includes(it.kind)));
 
   $effect(() => {
     soundItems.forEach(requestDuration);
@@ -123,6 +124,21 @@
           {/if}
           <span class="dur">{fmtDuration(durations[it.id])}</span>
         </div>
+      {/each}
+    </div>
+  {/if}
+
+  {#if exeItems.length > 0}
+    <div class="exes">
+      {#each exeItems as it (it.id)}
+        <button class="erow" ondblclick={() => openItem(it)} title="double-cliquer pour lancer">
+          <span class="eglyph">{it.glyph}</span>
+          <span class="ebody">
+            <span class="ename">{it.name}</span>
+            <span class="edesc">{it.desc}</span>
+          </span>
+          <span class="eyear">{it.year}</span>
+        </button>
       {/each}
     </div>
   {/if}
@@ -333,6 +349,35 @@
     from { transform: scaleY(0.4); }
     to { transform: scaleY(1); }
   }
+
+  /* ---- programmes : la collection d'expériences ---- */
+  .exes {
+    display: flex;
+    flex-direction: column;
+    border-top: 1px solid var(--panel);
+  }
+  .erow {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 7px 6px;
+    border-bottom: 1px solid var(--panel);
+    text-align: left;
+    transition: transform 60ms ease;
+  }
+  .erow:hover { background: rgba(127, 127, 120, 0.08); }
+  .erow:active { transform: scale(0.99); }
+  .eglyph { flex: none; font-size: 19px; line-height: 1; width: 26px; text-align: center; }
+  .ebody { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+  .ename { font-size: 12px; font-weight: bold; letter-spacing: 0.03em; }
+  .edesc {
+    font-size: 10.5px;
+    color: var(--mid);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .eyear { flex: none; font-size: 10px; color: var(--mid); }
 
   /* ---- notes : carnet de travail ---- */
   .notes {

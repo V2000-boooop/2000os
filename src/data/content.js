@@ -76,7 +76,12 @@ export const tree = [
   {
     id: 'jeux', name: 'Jeux', kind: 'folder',
     children: [
-      { id: 'pong', name: 'PONG_2000.exe', kind: 'stub', message: 'bientôt.' },
+      { id: 'exe_car', name: 'CAR.exe', kind: 'exe', glyph: '🚗', version: 'v0.4', year: '2024', desc: 'conduire. écouter. rien d\'autre.', message: 'bientôt disponible.\n\nla route est en cours de construction.' },
+      { id: 'exe_pong', name: 'PONG_2000.exe', kind: 'exe', glyph: '🏓', version: 'v0.9', year: '2019', desc: 'le premier. toujours pas fini.', message: 'bientôt disponible.\n\n(depuis 2019, oui.)' },
+      { id: 'exe_radio', name: 'RADIO.exe', kind: 'exe', glyph: '📻', version: 'v0.2', year: '2025', desc: 'des fréquences introuvables ailleurs.', message: 'bientôt disponible.\n\nrecherche du signal…' },
+      { id: 'exe_hal', name: 'HAL.exe', kind: 'exe', glyph: '👁', version: 'v1.0', year: '2023', desc: 'il répond. parfois.', message: 'HAL dort.\n\nne pas le réveiller pour rien.' },
+      { id: 'exe_secret', name: '???.exe', kind: 'exe', glyph: '❓', version: '', year: '', desc: '…', message: 'pas encore.\n\nreviens plus tard. ou cherche mieux.' },
+      { id: 'exe_test', name: 'TEST.exe', kind: 'exe', glyph: '🧪', version: 'v?.?', year: '2021', desc: 'ne pas ouvrir.', message: 'je t\'avais dit de ne pas ouvrir.\n\n(rien n\'a été cassé. probablement.)' },
     ],
   },
   {
