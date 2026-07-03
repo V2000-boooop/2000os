@@ -7,6 +7,7 @@
   import { desktopItems, byId, searchIndex } from '../data/content.js';
   import { openItem } from './open.js';
   import { restoreSession } from '../data/session.js';
+  import { sound, initSoundOnGesture, toggleSound } from './sound.svelte.js';
   import Window from './Window.svelte';
 
   let selected = $state(null);
@@ -28,7 +29,12 @@
   onMount(() => {
     restoreSession();
     const t = setInterval(() => (now = new Date()), 20000);
-    return () => clearInterval(t);
+    // Le son ne peut démarrer qu'après un premier geste (règle navigateur).
+    window.addEventListener('pointerdown', initSoundOnGesture, { once: false });
+    return () => {
+      clearInterval(t);
+      window.removeEventListener('pointerdown', initSoundOnGesture);
+    };
   });
 
   function openResult(id) {
@@ -100,6 +106,9 @@
       bind:value={query}
       spellcheck="false"
     />
+    <button class="mute" onclick={toggleSound} title={sound.enabled ? 'couper le son' : 'activer le son'}>
+      {sound.enabled ? '🔊' : '🔇'}
+    </button>
     <span class="clock">{clock}</span>
   </footer>
 </main>
@@ -221,6 +230,15 @@
     outline: none;
   }
   .search:focus { box-shadow: 2px 2px 0 rgba(35, 35, 31, 0.2); }
+  .mute {
+    flex: none;
+    font-size: 13px;
+    padding: 2px 4px;
+    opacity: 0.8;
+    transition: transform 60ms ease;
+  }
+  .mute:hover { opacity: 1; }
+  .mute:active { transform: scale(0.9); }
   .clock {
     font-size: 11.5px;
     color: var(--mid);

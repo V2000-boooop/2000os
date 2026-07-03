@@ -4,6 +4,7 @@
   // expérience (fenêtrée ou parenthèse immersive, cf. docs/030_OS.md couche D).
   import { onMount } from 'svelte';
   import { byId } from '../../data/content.js';
+  import { play } from '../sound.svelte.js';
 
   let { exeId } = $props();
   const exe = $derived(byId[exeId]);
@@ -16,6 +17,7 @@
   onMount(() => {
     const t = setInterval(() => {
       bars += 1 + Math.floor(Math.random() * 3);
+      play('tick');
       if (bars >= TOTAL) {
         bars = TOTAL;
         clearInterval(t);

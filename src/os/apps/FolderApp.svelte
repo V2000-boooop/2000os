@@ -5,6 +5,7 @@
   import { openItem } from '../open.js';
   import { player, playTrack, playQueue } from '../player.svelte.js';
   import { durations, requestDuration, fmtDuration } from '../durations.svelte.js';
+  import { play } from '../sound.svelte.js';
 
   let { folderId } = $props();
 
@@ -38,6 +39,7 @@
     clearTimeout(noteTimer);
     noteTimer = setTimeout(() => {
       previewId = previewId === it.id ? null : it.id;
+      play('tick');
     }, 230);
   }
   function noteDbl(it) {

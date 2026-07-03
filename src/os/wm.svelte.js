@@ -2,6 +2,8 @@
 // État global réactif (Svelte 5 runes). Une fenêtre = { id, appId, title, key,
 // x, y, w, h, z, minimized, props }.
 
+import { play } from './sound.svelte.js';
+
 let nextId = 1;
 
 export const wm = $state({
@@ -16,9 +18,11 @@ export function openWindow(def) {
     if (existing) {
       existing.minimized = false;
       focusWindow(existing.id);
+      play('tick');
       return existing.id;
     }
   }
+  play(def.appId === 'exe' ? 'launch' : 'open');
   const id = nextId++;
   const n = wm.windows.length;
   wm.windows.push({
@@ -39,7 +43,10 @@ export function openWindow(def) {
 
 export function closeWindow(id) {
   const i = wm.windows.findIndex((w) => w.id === id);
-  if (i >= 0) wm.windows.splice(i, 1);
+  if (i >= 0) {
+    wm.windows.splice(i, 1);
+    play('close');
+  }
 }
 
 export function focusWindow(id) {
@@ -56,4 +63,5 @@ export function toggleMinimize(id) {
   } else {
     w.minimized = true;
   }
+  play('minimize');
 }
