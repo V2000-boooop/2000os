@@ -43,7 +43,7 @@
     <div class="grid">
       {#each otherItems as it (it.id)}
         <button class="item" ondblclick={() => openFolderItem(it)} title="double-cliquer pour ouvrir">
-          <span class="ic">{glyphs[it.kind] ?? '▪'}</span>
+          <span class="ic">{glyphs[it.kind] ?? '▪'}{#if it.fav}<span class="favb">★</span>{/if}</span>
           <span class="nm">{it.name}</span>
         </button>
       {/each}
@@ -68,6 +68,7 @@
           <button class="name" onclick={() => isCurrent || playTrack(it, { list: soundItems, label: folder.name })}>
             {it.name}
           </button>
+          {#if it.fav}<span class="fav" title="collection personnelle">★</span>{/if}
           {#if isPlaying}
             <span class="eq"><i></i><i></i><i></i></span>
           {/if}
@@ -113,8 +114,22 @@
   }
   .item:hover { border-color: var(--line); background: rgba(127, 127, 120, 0.08); }
   .item:active { transform: scale(0.95); }
-  .ic { font-size: 20px; line-height: 1; }
+  .ic { font-size: 20px; line-height: 1; position: relative; }
   .nm { font-size: 11px; word-break: break-all; max-width: 108px; }
+  .favb {
+    position: absolute;
+    top: -5px;
+    right: -12px;
+    font-size: 10px;
+    color: var(--ink);
+  }
+  .fav {
+    flex: none;
+    font-size: 11px;
+    color: var(--ink);
+    opacity: 0.75;
+    user-select: none;
+  }
 
   /* ---- liste des sons : écoute directe ---- */
   .listhead {

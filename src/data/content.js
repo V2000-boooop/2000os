@@ -2,6 +2,9 @@
 // par le vrai contenu. Schéma léger « pièces » (docs/020_RESEARCH_ENGINE.md) :
 // - { ref: 'id' } permet la multi-appartenance
 // - meta = dimensions optionnelles
+// - fav: true = pièce de la collection personnelle de Vincent (★).
+//   Le dossier virtuel « Favoris » est construit automatiquement à partir de ces
+//   marqueurs et mélange naturellement sons, images, notes… (toutes matières).
 // La profondeur viendra dossier par dossier.
 
 export const tree = [
@@ -11,13 +14,13 @@ export const tree = [
       {
         id: 'samples', name: 'samples', kind: 'folder',
         children: [
-          { id: 'kick1', name: 'kick_carton.wav', kind: 'audio', src: '/media/kick_carton.wav' },
+          { id: 'kick1', name: 'kick_carton.wav', kind: 'audio', src: '/media/kick_carton.wav', fav: true },
         ],
       },
       {
         id: 'field', name: 'field recordings', kind: 'folder',
         children: [
-          { id: 'fr_hangar', name: 'hangar_pluie.wav', kind: 'audio', src: '/media/hangar_pluie.wav' },
+          { id: 'fr_hangar', name: 'hangar_pluie.wav', kind: 'audio', src: '/media/hangar_pluie.wav', fav: true },
           { id: 'fr_quai', name: 'quai_nuit_02.wav', kind: 'audio', src: '/media/quai_nuit_02.wav' },
         ],
       },
@@ -45,7 +48,7 @@ export const tree = [
       {
         id: 'moodboards', name: 'moodboards', kind: 'folder',
         children: [
-          { id: 'img_mood', name: 'moodboard_nuit', kind: 'image', src: '/media/moodboard_nuit.svg' },
+          { id: 'img_mood', name: 'moodboard_nuit', kind: 'image', src: '/media/moodboard_nuit.svg', fav: true },
         ],
       },
     ],
@@ -84,11 +87,26 @@ export const tree = [
 
 export const byId = {};
 
+/** Ids des pièces de la collection personnelle (★), dans l'ordre de l'arbre. */
+export const favoriteIds = [];
+
 function indexNode(node) {
   if (node.id) byId[node.id] = node;
+  if (node.fav) favoriteIds.push(node.id);
   (node.children ?? []).forEach((c) => { if (!c.ref) indexNode(c); });
 }
 tree.forEach(indexNode);
+
+// Dossier virtuel « Favoris » : agrège toutes les pièces marquées fav,
+// toutes matières confondues. Pas encore sur le bureau — accessible via la
+// recherche, en attendant sa place définitive.
+byId['favoris'] = {
+  id: 'favoris',
+  name: 'Favoris',
+  kind: 'folder',
+  virtual: true,
+  children: favoriteIds.map((id) => ({ ref: id })),
+};
 
 /** Résout les enfants d'un dossier (refs → items réels, multi-appartenance). */
 export function resolveChildren(folder) {
@@ -116,3 +134,4 @@ function walk(node, path) {
   });
 }
 tree.forEach((n) => walk(n, ''));
+searchIndex.push({ id: 'favoris', name: 'Favoris ★', kind: 'folder', path: 'collection personnelle' });
