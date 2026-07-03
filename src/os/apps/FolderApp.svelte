@@ -1,8 +1,10 @@
 <script>
-  // Le dossier : niveau 2. Les sons s'y écoutent directement (itération « Sons »).
+  // Le dossier : niveau 2. Les sons s'y écoutent directement, comme dans
+  // une discothèque personnelle (itérations « Sons »).
   import { byId, resolveChildren } from '../../data/content.js';
   import { openItem } from '../open.js';
-  import { player, playTrack } from '../player.svelte.js';
+  import { player, playTrack, playQueue } from '../player.svelte.js';
+  import { durations, requestDuration, fmtDuration } from '../durations.svelte.js';
 
   let { folderId } = $props();
 
@@ -10,6 +12,24 @@
   const items = $derived(folder ? resolveChildren(folder) : []);
   const soundItems = $derived(items.filter((it) => it.kind === 'audio'));
   const otherItems = $derived(items.filter((it) => it.kind !== 'audio'));
+
+  $effect(() => {
+    soundItems.forEach(requestDuration);
+  });
+
+  function playAll() {
+    playQueue(soundItems, folder.name);
+  }
+
+  // Double-clic sur un sous-dossier : l'ouvrir — et s'il contient des sons,
+  // lancer directement la lecture du premier.
+  function openFolderItem(it) {
+    openItem(it);
+    if (it.kind === 'folder' || it.kind === 'project') {
+      const sounds = resolveChildren(it).filter((k) => k.kind === 'audio');
+      if (sounds.length > 0) playQueue(sounds, it.name);
+    }
+  }
 
   const glyphs = { folder: '📁', project: '📁', note: '▤', image: '▦', stub: '▣' };
 </script>
@@ -22,7 +42,7 @@
   {#if otherItems.length > 0}
     <div class="grid">
       {#each otherItems as it (it.id)}
-        <button class="item" ondblclick={() => openItem(it)} title="double-cliquer pour ouvrir">
+        <button class="item" ondblclick={() => openFolderItem(it)} title="double-cliquer pour ouvrir">
           <span class="ic">{glyphs[it.kind] ?? '▪'}</span>
           <span class="nm">{it.name}</span>
         </button>
@@ -31,20 +51,27 @@
   {/if}
 
   {#if soundItems.length > 0}
+    <div class="listhead">
+      <button class="playall" onclick={playAll} title="enchaîner tous les sons du dossier">
+        ▶ lire le dossier
+      </button>
+      <span class="count">{soundItems.length} son{soundItems.length > 1 ? 's' : ''}</span>
+    </div>
     <div class="list">
       {#each soundItems as it (it.id)}
         {@const isCurrent = player.trackId === it.id}
         {@const isPlaying = isCurrent && player.playing}
         <div class="row" class:current={isCurrent}>
-          <button class="play" onclick={() => playTrack(it)} title={isPlaying ? 'pause' : 'écouter'}>
+          <button class="play" onclick={() => playTrack(it, { list: soundItems, label: folder.name })} title={isPlaying ? 'pause' : 'écouter'}>
             {isPlaying ? '⏸' : '▶'}
           </button>
-          <button class="name" ondblclick={() => playTrack(it)} onclick={() => isCurrent || playTrack(it)}>
+          <button class="name" onclick={() => isCurrent || playTrack(it, { list: soundItems, label: folder.name })}>
             {it.name}
           </button>
           {#if isPlaying}
             <span class="eq"><i></i><i></i><i></i></span>
           {/if}
+          <span class="dur">{fmtDuration(durations[it.id])}</span>
         </div>
       {/each}
     </div>
@@ -65,7 +92,7 @@
     padding: 10px;
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 8px;
     min-height: 100%;
   }
   .empty { color: var(--mid); font-size: 12px; }
@@ -90,6 +117,23 @@
   .nm { font-size: 11px; word-break: break-all; max-width: 108px; }
 
   /* ---- liste des sons : écoute directe ---- */
+  .listhead {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+  }
+  .playall {
+    font-size: 11px;
+    padding: 3px 10px;
+    border: 1px solid var(--ink);
+    background: var(--win);
+    transition: transform 60ms ease;
+  }
+  .playall:hover { background: var(--panel); }
+  .playall:active { transform: translate(1px, 1px); }
+  .count { font-size: 10.5px; color: var(--mid); }
+
   .list {
     display: flex;
     flex-direction: column;
@@ -127,13 +171,20 @@
     text-overflow: ellipsis;
     padding: 2px 0;
   }
+  .dur {
+    flex: none;
+    font-size: 10.5px;
+    color: var(--mid);
+    min-width: 34px;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+  }
   .eq {
     display: inline-flex;
     align-items: flex-end;
     gap: 2px;
     height: 12px;
     flex: none;
-    margin-right: 4px;
   }
   .eq i {
     width: 3px;

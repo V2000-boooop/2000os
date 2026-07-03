@@ -11,6 +11,8 @@ export function restoreSession() {
 
   // Le lecteur, en pause, discret en bas à droite.
   player.trackId = 'demo3';
+  player.queue = ['demo3'];
+  player.qIndex = 0;
   player.playing = false;
   player.autoplay = false;
   player.caption = 'laissé en pause hier, 02:17';

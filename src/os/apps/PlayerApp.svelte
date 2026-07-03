@@ -1,14 +1,19 @@
 <script>
-  // Le lecteur — app signature (030_OS). Version fenêtrée v1 ;
+  // Le lecteur — app signature (030_OS). Version fenêtrée v1 avec file d'écoute ;
   // le mode « Winamp vivant » (parenthèse) viendra plus tard.
   import { onMount } from 'svelte';
-  import { player, bindAudio, unbindAudio } from '../player.svelte.js';
+  import { player, bindAudio, unbindAudio, step, trackEnded } from '../player.svelte.js';
   import { byId } from '../../data/content.js';
+  import { durations, fmtDuration } from '../durations.svelte.js';
 
   let audio = $state(null);
   let progress = $state(0);
+  let current = $state(0);
 
   const track = $derived(byId[player.trackId]);
+  const hasQueue = $derived(player.queue.length > 1);
+  const canPrev = $derived(hasQueue && player.qIndex > 0);
+  const canNext = $derived(hasQueue && player.qIndex < player.queue.length - 1);
 
   onMount(() => {
     return () => unbindAudio();
@@ -21,6 +26,7 @@
     if (!audio.src.endsWith(track.src)) {
       audio.src = track.src;
       progress = 0;
+      current = 0;
     }
     if (player.autoplay) {
       player.autoplay = false;
@@ -36,7 +42,10 @@
   }
 
   function onTime() {
-    if (audio?.duration) progress = audio.currentTime / audio.duration;
+    if (audio?.duration) {
+      progress = audio.currentTime / audio.duration;
+      current = audio.currentTime;
+    }
   }
 
   function seek(e) {
@@ -56,8 +65,19 @@
       <span class="prog" style="width:{progress * 100}%"></span>
     </button>
     <div class="row">
-      <button class="pp" onclick={toggle}>{player.playing ? '⏸' : '▶'}</button>
-      <span class="meta">{player.caption}</span>
+      <span class="controls">
+        <button class="sk" disabled={!canPrev} onclick={() => step(-1)} title="son précédent">⏮</button>
+        <button class="pp" onclick={toggle} title={player.playing ? 'pause' : 'lecture'}>
+          {player.playing ? '⏸' : '▶'}
+        </button>
+        <button class="sk" disabled={!canNext} onclick={() => step(1)} title="son suivant">⏭</button>
+      </span>
+      <span class="time">{fmtDuration(current)}<em>/{fmtDuration(durations[track.id] ?? audio?.duration)}</em></span>
+      <span class="meta">
+        {#if player.caption}{player.caption}
+        {:else if hasQueue}{player.qLabel ? player.qLabel + ' · ' : ''}{player.qIndex + 1}/{player.queue.length}
+        {/if}
+      </span>
     </div>
   {:else}
     <div class="tt idle">— aucun son chargé —</div>
@@ -66,7 +86,7 @@
     bind:this={audio}
     onplay={() => (player.playing = true)}
     onpause={() => (player.playing = false)}
-    onended={() => (player.playing = false)}
+    onended={trackEnded}
     ontimeupdate={onTime}
   ></audio>
 </div>
@@ -122,17 +142,30 @@
     display: flex;
     align-items: center;
     gap: 10px;
+    min-width: 0;
   }
-  .pp {
-    width: 34px;
+  .controls { display: inline-flex; gap: 3px; flex: none; }
+  .pp, .sk {
     height: 26px;
     border: 1.5px solid var(--ink);
     background: var(--win);
-    font-size: 13px;
+    font-size: 12px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
     transition: transform 60ms ease;
   }
-  .pp:hover { background: var(--panel); }
-  .pp:active { transform: translate(1px, 1px); }
+  .pp { width: 36px; font-size: 13px; }
+  .sk { width: 28px; }
+  .pp:hover, .sk:hover:not(:disabled) { background: var(--panel); }
+  .pp:active, .sk:active:not(:disabled) { transform: translate(1px, 1px); }
+  .sk:disabled { opacity: 0.35; cursor: default; border-color: var(--line); }
+  .time {
+    flex: none;
+    font-size: 10.5px;
+    font-variant-numeric: tabular-nums;
+  }
+  .time em { font-style: normal; color: var(--mid); }
   .meta {
     font-size: 10.5px;
     color: var(--mid);
