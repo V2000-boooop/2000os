@@ -84,5 +84,8 @@ export function openPlayerWindow(opts = {}) {
     x: opts.x ?? Math.max(340, vw - 380),
     y: opts.y ?? Math.max(200, vh - 310),
     w: 330, h: 184,
+    // Le lecteur s'ouvre et se focus en silence : aucun son d'UI ne doit
+    // jamais salir le début d'une écoute (docs/050_SON.md).
+    silent: true,
   });
 }

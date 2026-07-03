@@ -16,13 +16,15 @@ export function openWindow(def) {
   if (def.key) {
     const existing = wm.windows.find((w) => w.key === def.key);
     if (existing) {
+      const wasMinimized = existing.minimized;
       existing.minimized = false;
       focusWindow(existing.id);
-      play('tick');
+      // Cohérence : restaurer sonne comme restaurer, quel que soit le chemin.
+      if (!def.silent) play(wasMinimized ? 'restore' : 'tick');
       return existing.id;
     }
   }
-  play(def.appId === 'exe' ? 'launch' : 'open');
+  if (!def.silent) play(def.appId === 'exe' ? 'launch' : 'open');
   const id = nextId++;
   const n = wm.windows.length;
   wm.windows.push({

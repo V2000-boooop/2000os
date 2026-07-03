@@ -4,7 +4,7 @@
   // expérience (fenêtrée ou parenthèse immersive, cf. docs/030_OS.md couche D).
   import { onMount } from 'svelte';
   import { byId } from '../../data/content.js';
-  import { play } from '../sound.svelte.js';
+  import { play, sound } from '../sound.svelte.js';
 
   let { exeId } = $props();
   const exe = $derived(byId[exeId]);
@@ -17,7 +17,9 @@
   onMount(() => {
     const t = setInterval(() => {
       bars += 1 + Math.floor(Math.random() * 3);
-      play('load_tick'); // fallback automatique sur 'tick' tant que load_tick.wav n'existe pas
+      // Silence tant que le vrai load_tick.wav n'existe pas : mieux vaut
+      // retirer un son qu'en subir un mauvais (philosophie 050).
+      if (sound.loaded.load_tick) play('load_tick');
       if (bars >= TOTAL) {
         bars = TOTAL;
         clearInterval(t);

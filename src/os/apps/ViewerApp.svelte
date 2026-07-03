@@ -2,6 +2,7 @@
   // La visionneuse — feuilleter les images et vidéos d'un dossier,
   // comme un vieux dossier d'images retrouvé (itération « Médias »).
   import { byId } from '../../data/content.js';
+  import { play } from '../sound.svelte.js';
 
   let { itemId, ids = [] } = $props();
 
@@ -13,7 +14,11 @@
   const canNext = $derived(idx < list.length - 1);
 
   function step(d) {
-    idx = Math.min(Math.max(idx + d, 0), list.length - 1);
+    const next = Math.min(Math.max(idx + d, 0), list.length - 1);
+    if (next !== idx) {
+      idx = next;
+      play('tick'); // accusé de page — on feuillette
+    }
   }
 </script>
 

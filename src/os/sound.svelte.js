@@ -81,4 +81,6 @@ export function toggleSound() {
   try {
     localStorage.setItem('v2000_sound', sound.enabled ? '1' : '0');
   } catch {}
+  // Réactiver donne un accusé immédiat ; couper reste silencieux, évidemment.
+  if (sound.enabled) play('tick');
 }
