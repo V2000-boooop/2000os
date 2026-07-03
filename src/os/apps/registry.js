@@ -4,13 +4,13 @@
 import FolderApp from './FolderApp.svelte';
 import NoteApp from './NoteApp.svelte';
 import PlayerApp from './PlayerApp.svelte';
-import ImageApp from './ImageApp.svelte';
+import ViewerApp from './ViewerApp.svelte';
 import StubApp from './StubApp.svelte';
 
 export const registry = {
   folder: { component: FolderApp },
   note: { component: NoteApp },
   player: { component: PlayerApp },
-  image: { component: ImageApp },
+  viewer: { component: ViewerApp },
   stub: { component: StubApp },
 };

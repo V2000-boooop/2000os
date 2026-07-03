@@ -11,11 +11,23 @@
   const folder = $derived(byId[folderId]);
   const items = $derived(folder ? resolveChildren(folder) : []);
   const soundItems = $derived(items.filter((it) => it.kind === 'audio'));
-  const otherItems = $derived(items.filter((it) => it.kind !== 'audio'));
+  const visualItems = $derived(items.filter((it) => it.kind === 'image' || it.kind === 'video'));
+  const otherItems = $derived(items.filter((it) => !['audio', 'image', 'video'].includes(it.kind)));
 
   $effect(() => {
     soundItems.forEach(requestDuration);
   });
+
+  // Vignettes : clic = fenêtre simple, double-clic = grande visionneuse.
+  let clickTimer = null;
+  function thumbClick(it) {
+    clearTimeout(clickTimer);
+    clickTimer = setTimeout(() => openItem(it, { ids: visualItems.map((v) => v.id) }), 230);
+  }
+  function thumbDbl(it) {
+    clearTimeout(clickTimer);
+    openItem(it, { ids: visualItems.map((v) => v.id), big: true });
+  }
 
   function playAll() {
     playQueue(soundItems, folder.name);
@@ -45,6 +57,24 @@
         <button class="item" ondblclick={() => openFolderItem(it)} title="double-cliquer pour ouvrir">
           <span class="ic">{glyphs[it.kind] ?? '▪'}{#if it.fav}<span class="favb">★</span>{/if}</span>
           <span class="nm">{it.name}</span>
+        </button>
+      {/each}
+    </div>
+  {/if}
+
+  {#if visualItems.length > 0}
+    <div class="thumbs">
+      {#each visualItems as it (it.id)}
+        <button class="thumb" onclick={() => thumbClick(it)} ondblclick={() => thumbDbl(it)} title="clic : ouvrir · double-clic : grand format">
+          <span class="frame">
+            {#if it.kind === 'video'}
+              <video src={it.src} preload="metadata" muted></video>
+              <span class="vplay">▶</span>
+            {:else}
+              <img src={it.src} alt={it.name} loading="lazy" draggable="false" />
+            {/if}
+          </span>
+          <span class="tnm">{it.name}{#if it.fav}<span class="fav"> ★</span>{/if}</span>
         </button>
       {/each}
     </div>
@@ -129,6 +159,56 @@
     color: var(--ink);
     opacity: 0.75;
     user-select: none;
+  }
+
+  /* ---- vignettes : images & vidéos ---- */
+  .thumbs {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(118px, 1fr));
+    gap: 8px;
+  }
+  .thumb {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 5px;
+    border: 1px solid transparent;
+    transition: transform 70ms ease;
+  }
+  .thumb:hover { border-color: var(--line); background: rgba(127, 127, 120, 0.08); }
+  .thumb:active { transform: scale(0.96); }
+  .frame {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 82px;
+    border: 1px solid var(--line);
+    background: #cfcec6;
+    overflow: hidden;
+  }
+  .frame img, .frame video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    pointer-events: none;
+  }
+  .vplay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    color: #fff;
+    text-shadow: 0 0 6px rgba(0, 0, 0, 0.8);
+  }
+  .tnm {
+    font-size: 10.5px;
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   /* ---- liste des sons : écoute directe ---- */

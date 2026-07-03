@@ -41,10 +41,22 @@ export const tree = [
         id: 'photos', name: 'photos', kind: 'folder',
         children: [
           { id: 'img_hangar', name: 'hangar_exterieur', kind: 'image', src: '/media/hangar_exterieur.svg' },
+          { id: 'img_beton', name: 'beton_hangar', kind: 'image', src: '/media/texture_beton.svg' },
         ],
       },
-      { id: 'videos', name: 'vidéos', kind: 'folder', children: [] },
-      { id: 'visuels', name: 'créations visuelles', kind: 'folder', children: [] },
+      {
+        id: 'videos', name: 'vidéos', kind: 'folder',
+        children: [
+          { id: 'vid_test', name: 'test_visuel_01.mp4', kind: 'video', src: '/media/test_visuel_01.mp4' },
+        ],
+      },
+      {
+        id: 'visuels', name: 'créations visuelles', kind: 'folder',
+        children: [
+          { id: 'img_affiche', name: 'affiche_nuit2000_v2', kind: 'image', src: '/media/affiche_rave.svg', fav: true },
+          { id: 'img_tracker', name: 'souvenir_tracker', kind: 'image', src: '/media/interface_tracker.svg' },
+        ],
+      },
       {
         id: 'moodboards', name: 'moodboards', kind: 'folder',
         children: [
