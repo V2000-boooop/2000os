@@ -82,8 +82,11 @@ export const tree = [
   {
     id: 'notes', name: 'Notes', kind: 'folder',
     children: [
-      { id: 'note_basse', name: 'note_basse.txt', kind: 'note', content: 'la basse doit respirer comme le field rec du hangar.\ntester en 12/8 ?' },
-      { id: 'note_ep', name: 'structure_ep.txt', kind: 'note', content: 'EP — 5 titres ?\n1. intro (field rec seul)\n2. ...' },
+      { id: 'note_basse', name: 'note_basse.txt', kind: 'note', meta: { date: 'hier, 02:14' }, content: 'la basse doit respirer comme le field rec du hangar.\ntester en 12/8 ?\n\nne pas nettoyer la pluie. la pluie EST le morceau.' },
+      { id: 'note_ep', name: 'structure_ep.txt', kind: 'note', meta: { date: 'lundi' }, content: 'EP — 5 titres ?\n\n1. intro (field rec seul, 1 min max)\n2. le morceau du hangar\n3. ?\n4. ?\n5. outro — la même intro mais détruite\n\nchaque titre = une pièce du même lieu.' },
+      { id: 'note_idees', name: 'idees_en_vrac.txt', kind: 'note', fav: true, meta: { date: 'mars 2026' }, content: 'un morceau qui commence par 30 sec de silence assumé\n\nvendre des sons au mètre ?\n\nle kick doit sonner comme un carton mouillé (cf. samples)\n\nune installation où le public mixe sans le savoir\n\nfilmer le hangar à 6h — lumière irréelle' },
+      { id: 'note_oublier', name: 'a_ne_pas_oublier.txt', kind: 'note', meta: { date: 'avril 2026' }, content: 'récupérer le zoom H4 chez marc\n\nSAUVEGARDER LE DISQUE (vraiment)\n\nréécouter les minidiscs de 2019 — il y avait un truc\n\nrépondre au mail du label. pas demain. aujourd\'hui.' },
+      { id: 'note_phrases', name: 'phrases.txt', kind: 'note', meta: { date: '—' }, content: '« la nuit est une salle de concert vide »\n\n« un son n\'est jamais perdu, il attend »\n\n« jouer moins fort que la pluie »' },
     ],
   },
   { id: 'internet', name: 'Internet', kind: 'stub', message: 'composition du numéro…\n\nporteuse introuvable.\nréessayer plus tard.' },

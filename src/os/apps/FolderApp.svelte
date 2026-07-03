@@ -12,7 +12,8 @@
   const items = $derived(folder ? resolveChildren(folder) : []);
   const soundItems = $derived(items.filter((it) => it.kind === 'audio'));
   const visualItems = $derived(items.filter((it) => it.kind === 'image' || it.kind === 'video'));
-  const otherItems = $derived(items.filter((it) => !['audio', 'image', 'video'].includes(it.kind)));
+  const noteItems = $derived(items.filter((it) => it.kind === 'note'));
+  const otherItems = $derived(items.filter((it) => !['audio', 'image', 'video', 'note'].includes(it.kind)));
 
   $effect(() => {
     soundItems.forEach(requestDuration);
@@ -27,6 +28,24 @@
   function thumbDbl(it) {
     clearTimeout(clickTimer);
     openItem(it, { ids: visualItems.map((v) => v.id), big: true });
+  }
+
+  // Notes : clic = aperçu rapide déplié, double-clic = bloc-notes.
+  let previewId = $state(null);
+  let noteTimer = null;
+  function noteClick(it) {
+    clearTimeout(noteTimer);
+    noteTimer = setTimeout(() => {
+      previewId = previewId === it.id ? null : it.id;
+    }, 230);
+  }
+  function noteDbl(it) {
+    clearTimeout(noteTimer);
+    openItem(it);
+  }
+  function excerpt(it) {
+    const lines = (it.content ?? '').split('\n').filter((l) => l.trim() !== '');
+    return lines.slice(0, 3).join('\n');
   }
 
   function playAll() {
@@ -103,6 +122,27 @@
             <span class="eq"><i></i><i></i><i></i></span>
           {/if}
           <span class="dur">{fmtDuration(durations[it.id])}</span>
+        </div>
+      {/each}
+    </div>
+  {/if}
+
+  {#if noteItems.length > 0}
+    <div class="notes">
+      {#each noteItems as it (it.id)}
+        <div class="nrow" class:open={previewId === it.id}>
+          <button class="nhead" onclick={() => noteClick(it)} ondblclick={() => noteDbl(it)} title="clic : aperçu · double-clic : ouvrir">
+            <span class="nic">▤</span>
+            <span class="nname">{it.name}</span>
+            {#if it.fav}<span class="fav">★</span>{/if}
+            <span class="ndate">{it.meta?.date ?? ''}</span>
+          </button>
+          {#if previewId === it.id}
+            <button class="npreview" ondblclick={() => noteDbl(it)}>
+              <pre>{excerpt(it)}</pre>
+              <span class="nmore">double-clic pour ouvrir</span>
+            </button>
+          {/if}
         </div>
       {/each}
     </div>
@@ -292,6 +332,60 @@
   @keyframes eq {
     from { transform: scaleY(0.4); }
     to { transform: scaleY(1); }
+  }
+
+  /* ---- notes : carnet de travail ---- */
+  .notes {
+    display: flex;
+    flex-direction: column;
+    border-top: 1px solid var(--panel);
+  }
+  .nrow { border-bottom: 1px solid var(--panel); }
+  .nhead {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    padding: 5px 4px;
+    text-align: left;
+  }
+  .nhead:hover { background: rgba(127, 127, 120, 0.08); }
+  .nrow.open .nhead { background: rgba(127, 127, 120, 0.12); }
+  .nic { flex: none; font-size: 12px; }
+  .nname {
+    flex: 1;
+    font-size: 12px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .ndate { flex: none; font-size: 10px; color: var(--mid); }
+  .npreview {
+    display: block;
+    width: 100%;
+    text-align: left;
+    padding: 6px 10px 8px 30px;
+    background: var(--paper);
+    border-top: 1px dashed var(--panel);
+    animation: unfold 110ms ease-out;
+  }
+  @keyframes unfold {
+    from { opacity: 0; transform: translateY(-3px); }
+    to { opacity: 1; transform: none; }
+  }
+  .npreview pre {
+    font-family: inherit;
+    font-size: 11.5px;
+    line-height: 1.55;
+    color: var(--ink);
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+  .nmore {
+    display: block;
+    margin-top: 5px;
+    font-size: 9.5px;
+    color: var(--mid);
   }
 
   .questions {
