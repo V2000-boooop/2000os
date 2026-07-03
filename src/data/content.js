@@ -155,3 +155,8 @@ function walk(node, path) {
 }
 tree.forEach((n) => walk(n, ''));
 searchIndex.push({ id: 'favoris', name: 'Favoris ★', kind: 'folder', path: 'collection personnelle' });
+
+// Outil interne : UI Sound Lab (docs/exploration/soundlist_ui_v1.md).
+// Pas sur le bureau — accessible via la recherche (« lab », « son »…).
+byId['soundlab'] = { id: 'soundlab', name: 'UI Sound Lab', kind: 'lab' };
+searchIndex.push({ id: 'soundlab', name: 'UI Sound Lab', kind: 'lab', path: 'outil interne — sons d\'interface' });

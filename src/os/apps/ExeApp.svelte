@@ -17,7 +17,7 @@
   onMount(() => {
     const t = setInterval(() => {
       bars += 1 + Math.floor(Math.random() * 3);
-      play('tick');
+      play('load_tick'); // fallback automatique sur 'tick' tant que load_tick.wav n'existe pas
       if (bars >= TOTAL) {
         bars = TOTAL;
         clearInterval(t);

@@ -60,8 +60,9 @@ export function toggleMinimize(id) {
   if (w.minimized) {
     w.minimized = false;
     w.z = ++wm.topZ;
+    play('restore'); // fallback automatique sur 'minimize' tant que restore.wav n'existe pas
   } else {
     w.minimized = true;
+    play('minimize');
   }
-  play('minimize');
 }

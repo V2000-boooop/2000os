@@ -1,11 +1,19 @@
-// Carte des sons d'interface (docs/050_SON.md).
-// v1 : placeholders synthétiques, à remplacer par les vrais sons de Vincent —
-// déposer un fichier dans public/media/ui/ et changer le chemin ici. Rien d'autre.
+// Carte des sons d'interface (docs/050_SON.md + docs/exploration/soundlist_ui_v1.md).
+// Remplacer un son = déposer le fichier dans public/media/ui/ (même nom), rien d'autre.
+// `fallback` : son joué tant que le fichier n'existe pas encore.
 
 export const soundMap = {
-  open:     { src: '/media/ui/open.wav',     gain: 0.16 }, // ouverture de fenêtre
-  close:    { src: '/media/ui/close.wav',    gain: 0.16 }, // fermeture
-  minimize: { src: '/media/ui/minimize.wav', gain: 0.14 }, // réduction / restauration
-  tick:     { src: '/media/ui/tick.wav',     gain: 0.10 }, // petit accusé (aperçu de note, chargement)
-  launch:   { src: '/media/ui/launch.wav',   gain: 0.15 }, // lancement d'un .exe
+  // ---- P1 ----
+  tick:      { src: '/media/ui/tick.wav',      gain: 0.10, label: 'accusé discret (aperçu note, re-focus)' },
+  open:      { src: '/media/ui/open.wav',      gain: 0.16, label: 'ouverture de fenêtre' },
+  close:     { src: '/media/ui/close.wav',     gain: 0.16, label: 'fermeture de fenêtre' },
+  minimize:  { src: '/media/ui/minimize.wav',  gain: 0.14, label: 'réduction vers la barre' },
+  // ---- P2 ----
+  restore:   { src: '/media/ui/restore.wav',   gain: 0.14, label: 'restauration depuis la barre', fallback: 'minimize' },
+  launch:    { src: '/media/ui/launch.wav',    gain: 0.15, label: 'lancement d\'un .exe' },
+  load_tick: { src: '/media/ui/load_tick.wav', gain: 0.07, label: 'tic de barre de chargement', fallback: 'tick' },
+  // ---- P3 ----
+  select:    { src: '/media/ui/select.wav',    gain: 0.06, label: 'sélection d\'icône (clic simple)' },
+  deny:      { src: '/media/ui/deny.wav',      gain: 0.14, label: 'action impossible / erreur douce' },
+  collect:   { src: '/media/ui/collect.wav',   gain: 0.16, label: 'récompense / déblocage de pièce' },
 };

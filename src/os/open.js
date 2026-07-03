@@ -48,5 +48,8 @@ export function openItem(item, ctx = {}) {
     case 'exe':
       openWindow({ appId: 'exe', key: `exe:${item.id}`, title: item.name, props: { exeId: item.id }, w: 380, h: 240 });
       break;
+    case 'lab':
+      openWindow({ appId: 'soundlab', key: 'soundlab', title: 'UI Sound Lab', w: 560, h: 470 });
+      break;
   }
 }

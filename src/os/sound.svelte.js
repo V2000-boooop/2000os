@@ -8,6 +8,7 @@ import { soundMap } from '../data/sounds.js';
 export const sound = $state({
   enabled: true,
   ready: false,
+  loaded: {}, // name -> true si le fichier a été chargé et décodé
 });
 
 // Préférence mémorisée.
@@ -20,17 +21,29 @@ if (typeof window !== 'undefined') {
 let ctx = null;
 const buffers = {};
 
+async function loadOne(name, def) {
+  try {
+    const res = await fetch(def.src, { cache: 'no-cache' });
+    if (!res.ok) throw new Error();
+    const ab = await res.arrayBuffer();
+    buffers[name] = await ctx.decodeAudioData(ab);
+    sound.loaded[name] = true;
+  } catch {
+    delete buffers[name];
+    sound.loaded[name] = false;
+  }
+}
+
 async function preload() {
-  await Promise.all(
-    Object.entries(soundMap).map(async ([name, def]) => {
-      try {
-        const res = await fetch(def.src);
-        const ab = await res.arrayBuffer();
-        buffers[name] = await ctx.decodeAudioData(ab);
-      } catch {}
-    })
-  );
+  await Promise.all(Object.entries(soundMap).map(([n, d]) => loadOne(n, d)));
   sound.ready = true;
+}
+
+/** Recharge tous les fichiers (utile après remplacement d'un wav — UI Sound Lab). */
+export async function reloadSounds() {
+  if (!ctx) return;
+  sound.ready = false;
+  await preload();
 }
 
 /** À appeler sur le premier geste utilisateur (pointerdown global). */
@@ -45,11 +58,15 @@ export function initSoundOnGesture() {
   if (ctx.state === 'suspended') ctx.resume().catch(() => {});
 }
 
-/** Joue un son d'interface, si activé et prêt. Silencieux sinon. */
+/** Joue un son d'interface (ou son fallback si le fichier n'existe pas encore). */
 export function play(name) {
   if (!sound.enabled || !ctx) return;
-  const def = soundMap[name];
-  const buf = buffers[name];
+  let def = soundMap[name];
+  let buf = buffers[name];
+  if (!buf && def?.fallback) {
+    buf = buffers[def.fallback];
+    def = soundMap[def.fallback];
+  }
   if (!def || !buf) return;
   const src = ctx.createBufferSource();
   src.buffer = buf;
