@@ -4,6 +4,13 @@
 > Détail et historique des décisions : `090_DECISION_LOG.md`.
 > Dernière révision : 2026-07-03
 
+## Protocole de session (économie de contexte)
+
+- Nouvelle conversation = Vincent écrit : « Lis docs/000_PROJECT_MEMORY.md puis : [tâche] ». Claude lit CE document, puis uniquement les fichiers nécessaires à la tâche.
+- Un chantier = une conversation. Ne pas prolonger indéfiniment une même conversation.
+- Claude ne relit jamais toute la bible ; chaque doc système est autonome.
+- Réponses courtes, pas de récapitulatifs de ce qui est déjà écrit ici.
+
 ## Le projet en trois phrases
 
 Vincent 2000 OS est l'**atelier numérique vivant** de Vincent 2000, identité artistique réelle d'un DJ, compositeur et sound designer. Il rend accessible sa matière créative (musiques, recherches sonores et visuelles, notes, archives, projets, jeux) à travers une interface immersive inspirée d'un ordinateur personnel 1998–2003 — **interprétation personnelle**, pas reconstitution. La frontière réel/mise en scène est volontairement floue.
@@ -67,5 +74,8 @@ Convention : en-tête standard sur chaque document système (rôle, dépendances
 - Méthode actuelle : **prototype vivant** (fonctionnalité → UX rapide → dev → test → amélioration ; la doc suit le développement). La bible restante (040/050/060/070) s'écrira en suivant le projet.
 - **Bureau v1 livré** (2026-07-03) : moteur de fenêtres, bureau catégories naturelles, scène restaurée (`src/data/session.js`), recherche v0, matière fictive (`src/data/content.js`). Puis v1 des dossiers : **Sons** (écoute directe, file, durées, « lire le dossier »), **Médias** (vignettes + visionneuse feuilletable), **Notes** (aperçu clic / bloc-notes double-clic), **Jeux** (launcher 6 .exe). **Favoris** : dimension `fav` (★) + dossier virtuel toutes matières.
 - **Règle des jeux (040)** : chaque jeu = expérience simple et rétro + voyage esthétique + porte de déblocage de matière personnelle (récompenses = pièces cachées, toujours couche bonus, jamais péage).
+- **Son (050)** : philosophie « le silence fait partie de l'identité » (retirer plutôt qu'ajouter ; l'écoute musicale est sacrée). **Famille UI v1 verrouillée** avec les vrais sons de Vincent (tick/open/close/minimize/launch). Restent à produire : restore, load_tick, select, deny, collect (`docs/UI_SOUND_TODO.md`). Outil : UI Sound Lab (recherche → « lab »).
+- **NIGHT DRIVE** : métamorphose bureau ↔ conduite nocturne pixel art — architecture posée dans `docs/exploration/nightdrive_architecture.md`, 3 questions ouvertes pour Vincent (nom/interrupteur, correspondances, format du mix). Aucun code encore.
+- Lancement local : double-clic « Lancer Vincent 2000 OS.command » (nécessite Node.js).
 - Bureau : **scène ouverte sur bureau très simple**. Règles OS : « la machine ne démarre jamais » (arrivée en cours de session, scène = activité réelle) ; « **trois niveaux de profondeur** » (1 : bureau = ordinateur normal avec **catégories naturelles** — Sons, Médias, Projets, Jeux, Notes, Internet, Corbeille — jamais les projets directement ; 2 : les dossiers révèlent l'univers ; 3 : liens/constellation presque infinis) ; « **le bureau est calme, les interactions sont exubérantes** » (minimalisme de composition, richesse dans le feedback : sons, micro-animations, matière — principe 9 du manifeste). Jamais de tableau de bord.
 - **En cours : conception/développement du bureau v1.**
