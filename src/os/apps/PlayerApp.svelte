@@ -1,7 +1,8 @@
 <script>
   // Le lecteur — app signature (030_OS). Version fenêtrée v1 ;
   // le mode « Winamp vivant » (parenthèse) viendra plus tard.
-  import { player } from '../player.svelte.js';
+  import { onMount } from 'svelte';
+  import { player, bindAudio, unbindAudio } from '../player.svelte.js';
   import { byId } from '../../data/content.js';
 
   let audio = $state(null);
@@ -9,8 +10,14 @@
 
   const track = $derived(byId[player.trackId]);
 
+  onMount(() => {
+    return () => unbindAudio();
+  });
+
   $effect(() => {
-    if (!audio || !track) return;
+    if (!audio) return;
+    bindAudio(audio);
+    if (!track) return;
     if (!audio.src.endsWith(track.src)) {
       audio.src = track.src;
       progress = 0;
@@ -50,9 +57,7 @@
     </button>
     <div class="row">
       <button class="pp" onclick={toggle}>{player.playing ? '⏸' : '▶'}</button>
-      <span class="meta">
-        {#if player.caption}{player.caption}{:else}{track.meta?.project ?? ''} {track.meta?.state ?? ''}{/if}
-      </span>
+      <span class="meta">{player.caption}</span>
     </div>
   {:else}
     <div class="tt idle">— aucun son chargé —</div>

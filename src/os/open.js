@@ -1,7 +1,7 @@
 // Ouvrir un item = ouvrir le bon lieu (cf. 030_OS : les applications sont des lieux).
 
 import { openWindow } from './wm.svelte.js';
-import { player } from './player.svelte.js';
+import { playTrack } from './player.svelte.js';
 
 export function openItem(item) {
   if (!item) return;
@@ -13,15 +13,12 @@ export function openItem(item) {
         key: `folder:${item.id}`,
         title: `${item.name}/`,
         props: { folderId: item.id },
-        w: item.kind === 'project' ? 500 : 460,
-        h: item.kind === 'project' ? 400 : 340,
+        w: 460,
+        h: 340,
       });
       break;
     case 'audio':
-      player.trackId = item.id;
-      player.autoplay = true;
-      player.caption = '';
-      openWindow({ appId: 'player', key: 'player', title: '♪ lecteur', w: 330, h: 180 });
+      playTrack(item);
       break;
     case 'note':
       openWindow({ appId: 'note', key: `note:${item.id}`, title: item.name, props: { noteId: item.id }, w: 410, h: 270 });
