@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300">
+  <rect width="400" height="300" fill="#ffffff"/>
+  <ellipse cx="200" cy="150" rx="150" ry="70" fill="none" stroke="#c0c0c0" stroke-width="10"/>
+  <text x="200" y="140" text-anchor="middle" font-family="monospace" font-size="34" font-weight="bold" fill="#808080">VINCENT</text>
+  <text x="200" y="182" text-anchor="middle" font-family="monospace" font-size="40" font-weight="bold" fill="#a0a0a0">2000</text>
+  <text x="200" y="240" text-anchor="middle" font-family="monospace" font-size="10" fill="#c0c0c0">(pas ça. surtout pas ça.)</text>
+</svg>

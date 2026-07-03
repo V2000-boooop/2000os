@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300">
+  <rect width="400" height="300" fill="#b9bcb6"/>
+  <rect y="210" width="400" height="90" fill="#8e918b"/>
+  <polygon points="40,210 40,120 200,70 360,120 360,210" fill="#6f736d"/>
+  <polygon points="40,120 200,70 360,120 200,96" fill="#7d817a"/>
+  <rect x="150" y="140" width="100" height="70" fill="#4a4e48"/>
+  <rect x="70" y="150" width="34" height="44" fill="#5a5e57"/>
+  <rect x="296" y="150" width="34" height="44" fill="#5a5e57"/>
+  <line x1="0" y1="210" x2="400" y2="210" stroke="#767a73" stroke-width="2"/>
+  <rect x="188" y="238" width="24" height="6" fill="#767a73"/>
+  <text x="14" y="288" font-family="monospace" font-size="11" fill="#5f635c">repérage — zone nord, mai 2026</text>
+</svg>

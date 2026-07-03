@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>Vincent 2000 OS — Wireframes du bureau (v1)</title>
+<style>
+  :root{
+    --ink:#222; --mid:#777; --line:#999; --paper:#f2f2f0; --panel:#e4e4e0; --win:#fbfbfa;
+    --accent:#444;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{font-family:ui-monospace,'SF Mono',Menlo,Consolas,monospace; background:var(--paper); color:var(--ink); padding:24px; line-height:1.45;}
+  h1{font-size:18px; margin-bottom:4px;}
+  .sub{color:var(--mid); font-size:12px; margin-bottom:20px;}
+  .tabs{display:flex; gap:8px; margin-bottom:16px; flex-wrap:wrap;}
+  .tab{padding:8px 14px; border:1px solid var(--line); background:var(--panel); cursor:pointer; font-size:13px; font-family:inherit;}
+  .tab.active{background:var(--ink); color:#fff; border-color:var(--ink);}
+  .variant{display:none;}
+  .variant.active{display:block;}
+  .pitch{font-size:13px; margin-bottom:14px; max-width:860px;}
+  .pitch b{background:#ddd; padding:0 4px;}
+
+  /* ---- desktop frame ---- */
+  .screen{width:100%; max-width:960px; aspect-ratio:16/9.5; border:2px solid var(--ink); background:var(--win); position:relative; overflow:hidden; margin-bottom:10px;}
+  .zone{position:absolute; border:1px dashed var(--line); padding:6px; font-size:10.5px; color:var(--mid);}
+  .zone .zl{position:absolute; top:-9px; left:8px; background:var(--win); padding:0 5px; font-size:9.5px; letter-spacing:.08em; color:var(--ink); font-weight:bold;}
+  .icon{display:inline-block; width:74px; text-align:center; margin:6px 4px; font-size:10px; color:var(--ink); vertical-align:top;}
+  .icon .px{width:34px; height:30px; border:1.5px solid var(--ink); margin:0 auto 3px; background:var(--panel); position:relative;}
+  .icon .px.badge:after{content:attr(data-b); position:absolute; top:-8px; right:-10px; background:var(--ink); color:#fff; font-size:9px; padding:0 4px; border-radius:8px;}
+  .card{border:1px solid var(--line); background:var(--panel); padding:5px 7px; font-size:10px; margin:4px 0; color:var(--ink);}
+  .card small{color:var(--mid); display:block; font-size:9px;}
+  .note{border:1px solid var(--line); background:#eceae2; padding:5px 7px; font-size:10px; margin:4px 0;}
+  .win{position:absolute; border:1.5px solid var(--ink); background:var(--win); box-shadow:4px 4px 0 rgba(0,0,0,.15); font-size:10px;}
+  .win .bar{background:var(--ink); color:#fff; padding:3px 7px; font-size:10px; display:flex; justify-content:space-between;}
+  .win .bar .ctl{letter-spacing:2px;}
+  .win .body{padding:7px;}
+  .taskbar{position:absolute; bottom:0; left:0; right:0; height:30px; border-top:1.5px solid var(--ink); background:var(--panel); display:flex; align-items:center; gap:6px; padding:0 8px; font-size:10.5px;}
+  .tb{border:1px solid var(--line); padding:2px 8px; background:var(--win);}
+  .tb.start{background:var(--ink); color:#fff; border-color:var(--ink);}
+  .search{margin-left:auto; border:1px solid var(--ink); padding:2px 8px; background:#fff; min-width:170px; color:var(--mid);}
+  .clock{color:var(--mid);}
+  .status{position:absolute; font-size:9.5px; color:var(--mid);}
+
+  /* ---- annotations ---- */
+  .cols{display:grid; grid-template-columns:1fr 1fr; gap:18px; max-width:960px; margin-bottom:8px;}
+  @media(max-width:800px){.cols{grid-template-columns:1fr;}}
+  h3{font-size:12px; letter-spacing:.06em; margin:14px 0 6px; text-transform:uppercase;}
+  ul{list-style:none; font-size:12px;}
+  li{margin:5px 0; padding-left:14px; position:relative;}
+  li:before{content:"·"; position:absolute; left:2px;}
+  .parcours li b{display:inline-block; min-width:86px;}
+  .verdict{border:1px solid var(--ink); background:var(--panel); padding:10px 14px; font-size:12.5px; max-width:960px; margin-top:6px;}
+  .reco{border:2px solid var(--ink); background:#fff; padding:14px 16px; font-size:13px; max-width:960px; margin-top:26px;}
+  .reco h2{font-size:14px; margin-bottom:8px;}
+</style>
+</head>
+<body>
+
+<h1>Vincent 2000 OS — Wireframes du bureau</h1>
+<p class="sub">3 dispositions · architecture validée A×C×B×D · gris volontaire : on choisit la structure, pas le style (070 viendra après) · 2026-07-03</p>
+
+<div class="tabs">
+  <button class="tab active" onclick="show(0,this)">W1 — L'établi cartographié</button>
+  <button class="tab" onclick="show(1,this)">W2 — La scène ouverte</button>
+  <button class="tab" onclick="show(2,this)">W3 — Le bureau respirant</button>
+</div>
+
+<!-- ================= W1 ================= -->
+<div class="variant active">
+  <p class="pitch">Le bureau est une <b>carte de l'atelier</b> : zones nommées et stables, contenu changeant. Tout est visible d'un coup d'œil — l'activité, les questions, ce qui attend d'être trié. Le visiteur comprend le lieu en 5 secondes sans rien ouvrir.</p>
+  <div class="screen">
+    <div class="zone" style="top:16px; left:12px; width:200px; height:200px;">
+      <span class="zl">LES PROJETS</span>
+      <span class="icon"><span class="px badge" data-b="3?"></span>HAL2000</span>
+      <span class="icon"><span class="px"></span>CARMEN</span>
+      <span class="icon"><span class="px"></span>DJ SETS</span>
+      <span class="icon"><span class="px"></span>ARCHIVE</span>
+    </div>
+    <div class="zone" style="top:16px; left:228px; width:340px; height:240px;">
+      <span class="zl">SUR L'ÉTABLI</span>
+      <div class="card">♫ demo_grain_v3.wav <small>HAL2000 · hier 02:17 · en cours</small></div>
+      <div class="card">▓ moodboard_nuit <small>CARMEN · il y a 3 jours</small></div>
+      <div class="card">▤ note : structure EP <small>HAL2000 · lundi</small></div>
+    </div>
+    <div class="zone" style="top:16px; right:12px; width:190px; height:190px;">
+      <span class="zl">PUNAISÉ — QUESTIONS</span>
+      <div class="note">? quel grain pour la basse HAL ?</div>
+      <div class="note">? identité visuelle Carmen — piste peintre_X</div>
+    </div>
+    <div class="zone" style="bottom:44px; left:12px; width:280px; height:64px;">
+      <span class="zl">À TRIER</span>
+      <div class="card">📦 versement_juin2026 — 14 pièces <small>festival X · non triées</small></div>
+    </div>
+    <div class="status" style="bottom:48px; right:16px;">~ dernière activité : hier 02:17 — 4 pièces ajoutées</div>
+    <div class="taskbar">
+      <span class="tb start">☰</span><span class="tb">explorateur</span><span class="tb">lecteur</span><span class="tb">carnet</span><span class="tb">constellation</span>
+      <span class="search">⌕ rechercher dans l'atelier…</span><span class="clock">23:41</span>
+    </div>
+  </div>
+  <div class="cols">
+    <div>
+      <h3>Interactions clés</h3>
+      <ul>
+        <li>Double-clic projet → fenêtre dossier vivant (ressources + questions + fil d'activité).</li>
+        <li>Clic carte d'établi → la pièce s'ouvre (fenêtre selon sa matière : lecteur, visionneuse, note).</li>
+        <li>Clic question punaisée → s'ouvre dans le Carnet, avec ses pièces liées.</li>
+        <li>« À trier » : visible mais non interactif pour le visiteur — c'est une trace de vie, pas une tâche.</li>
+        <li>Recherche permanente (raccourci clavier + champ) → résultats multi-dimensions.</li>
+      </ul>
+    </div>
+    <div>
+      <h3>Parcours</h3>
+      <ul class="parcours">
+        <li><b>Le pressé</b> champ recherche → tape le titre → fenêtre lecteur. ~15 s.</li>
+        <li><b>Le curieux</b> l'établi l'accroche (pièce datée d'hier) → clic → écoute → remonte le lien vers le projet.</li>
+        <li><b>Le fidèle</b> compare l'établi et les questions à sa dernière visite — le changement est le contenu même du bureau.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="verdict"><b>Forces :</b> lisibilité totale, l'atelier s'explique tout seul, structure stable donc développement sûr. <b>Risques :</b> le plus « interface » des trois — la grille de zones peut sentir le tableau de bord plus que le lieu habité.</div>
+</div>
+
+<!-- ================= W2 ================= -->
+<div class="variant">
+  <p class="pitch">On n'arrive pas devant un bureau rangé : <b>on surprend une session de travail</b>. Des fenêtres sont déjà ouvertes — un morceau en pause dans le lecteur, un dossier en cours d'exploration, une note à moitié écrite. Le désordre est contrôlé (2–3 fenêtres max) et reflète l'activité réelle.</p>
+  <div class="screen">
+    <div class="zone" style="top:16px; left:12px; width:90px; height:270px;">
+      <span class="zl">PROJETS</span>
+      <span class="icon"><span class="px badge" data-b="3?"></span>HAL2000</span>
+      <span class="icon"><span class="px"></span>CARMEN</span>
+      <span class="icon"><span class="px"></span>DJ SETS</span>
+    </div>
+    <div class="win" style="top:30px; left:130px; width:330px;">
+      <div class="bar"><span>HAL2000/</span><span class="ctl">_ □ ×</span></div>
+      <div class="body">
+        sons(12) · images(8) · notes(5) · refs(4)<br><br>
+        ♫ demo_grain_v3.wav &nbsp;&nbsp; ♫ basse_test_01.wav<br>
+        ▓ moodboard_nuit &nbsp;&nbsp; ▤ structure_EP.txt<br><br>
+        ? questions ouvertes (3)
+      </div>
+    </div>
+    <div class="win" style="top:110px; left:490px; width:250px;">
+      <div class="bar"><span>♫ lecteur</span><span class="ctl">_ □ ×</span></div>
+      <div class="body">⏸ demo_grain_v3.wav<br>▁▂▄▆█▆▄▂▁▂▄▆█▆▄▂▁<br><small style="color:#777">laissé en pause hier à 02:17</small></div>
+    </div>
+    <div class="win" style="top:220px; left:180px; width:280px;">
+      <div class="bar"><span>▤ note (non enregistrée)</span><span class="ctl">_ □ ×</span></div>
+      <div class="body">idée : la basse doit respirer comme<br>le field rec du hangar — tester en 12<span style="border-left:1px solid #222">&nbsp;</span></div>
+    </div>
+    <div class="status" style="top:18px; right:16px;">session du 02/07 restaurée</div>
+    <div class="taskbar">
+      <span class="tb start">☰</span><span class="tb">HAL2000/</span><span class="tb">♫ lecteur</span><span class="tb">▤ note</span>
+      <span class="search">⌕ rechercher dans l'atelier…</span><span class="clock">23:41</span>
+    </div>
+  </div>
+  <div class="cols">
+    <div>
+      <h3>Interactions clés</h3>
+      <ul>
+        <li>Les fenêtres pré-ouvertes reflètent la <b>vraie dernière session</b> de Vincent (060_VIE) — jamais un scénario figé.</li>
+        <li>Le visiteur peut tout fermer, tout déplacer : le bureau redevient sien.</li>
+        <li>Reprendre la lecture en pause = premier geste proposé implicitement (presence humaine + son immédiat).</li>
+        <li>La note « non enregistrée » avec curseur qui clignote : l'atelier est habité maintenant.</li>
+        <li>Recherche permanente identique à W1.</li>
+      </ul>
+    </div>
+    <div>
+      <h3>Parcours</h3>
+      <ul class="parcours">
+        <li><b>Le pressé</b> ignore la scène → recherche → morceau. ~15 s, rien ne le bloque.</li>
+        <li><b>Le curieux</b> est happé immédiatement : un play en pause est une invitation irrésistible. Meilleur des trois pour lui.</li>
+        <li><b>Le fidèle</b> retrouve une scène différente à chaque visite — le bureau raconte ce qui s'est passé depuis.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="verdict"><b>Forces :</b> présence humaine maximale, immersion instantanée, incarne « surprendre un lieu de travail » mieux que tout. <b>Risques :</b> première impression potentiellement chargée ; exige que l'atelier soit réellement actif (une scène qui ne change pas sonne faux) ; scénographie de session à concevoir avec soin.</div>
+</div>
+
+<!-- ================= W3 ================= -->
+<div class="variant">
+  <p class="pitch">Un bureau <b>presque vide qui respire</b> : quelques icônes, une ligne d'activité, beaucoup d'espace. Toute la densité vit dans les fenêtres et le menu. Le calme comme signature — l'inverse du web bruyant.</p>
+  <div class="screen">
+    <div style="position:absolute; inset:0; background:radial-gradient(circle at 60% 40%, #ececea 0%, #fbfbfa 60%);"></div>
+    <div class="zone" style="top:20px; left:16px; width:88px; height:230px; border:none;">
+      <span class="icon"><span class="px badge" data-b="3?"></span>HAL2000</span>
+      <span class="icon"><span class="px"></span>CARMEN</span>
+      <span class="icon"><span class="px"></span>établi</span>
+    </div>
+    <div class="status" style="bottom:70px; left:0; right:0; text-align:center;">~ hier, 02:17 — quatre pièces sont entrées dans l'atelier ~</div>
+    <div class="win" style="top:60px; left:300px; width:300px;">
+      <div class="bar"><span>☰ menu</span><span class="ctl">×</span></div>
+      <div class="body">
+        → explorateur<br>→ lecteur<br>→ carnet<br>→ constellation<br>→ l'établi (session en cours)<br>→ parenthèses… <small style="color:#777">(voiture, HAL, jeux)</small><br><br>
+        <span style="border:1px solid #222; padding:2px 6px; display:inline-block; width:90%;">⌕ tout retrouver…</span>
+      </div>
+    </div>
+    <div class="taskbar">
+      <span class="tb start">☰</span>
+      <span class="search">⌕ rechercher dans l'atelier…</span><span class="clock">23:41</span>
+    </div>
+  </div>
+  <div class="cols">
+    <div>
+      <h3>Interactions clés</h3>
+      <ul>
+        <li>Le menu ☰ est le cœur : tout l'atelier y est listé, recherche incluse — un seul point d'entrée à apprendre.</li>
+        <li>« L'établi » devient une app-fenêtre (la session en cours s'ouvre à la demande, au lieu d'occuper le bureau).</li>
+        <li>La ligne d'activité centrale est le seul élément vivant du bureau — sobre mais datée, elle prouve la vie.</li>
+        <li>Le fond peut, à terme, devenir la constellation atténuée (pont vers la couche B).</li>
+      </ul>
+    </div>
+    <div>
+      <h3>Parcours</h3>
+      <ul class="parcours">
+        <li><b>Le pressé</b> recherche directe → morceau. Le plus rapide des trois (rien ne distrait).</li>
+        <li><b>Le curieux</b> risque un bureau trop silencieux — la ligne d'activité et le badge « 3? » doivent suffire à l'accrocher. Point faible.</li>
+        <li><b>Le fidèle</b> doit ouvrir l'établi pour voir le changement — un clic de plus que W1/W2.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="verdict"><b>Forces :</b> élégance, calme signature, le plus simple à développer et à adapter mobile. <b>Risques :</b> le moins « habité » des trois — la vie est cachée derrière des clics, ce qui affaiblit l'établi (couche C) et le parcours du curieux.</div>
+</div>
+
+<!-- ================= RECO ================= -->
+<div class="reco">
+  <h2>Recommandation de Claude</h2>
+  <p><b>W2 (la scène ouverte), tempérée par la discipline de W1.</b> W2 est le seul wireframe qu'aucun autre site ne pourrait avoir : le bureau EST la présence humaine (principes 5 et 9, obsession « présence derrière les machines »). Pour neutraliser son risque de chaos : maximum 2–3 fenêtres restaurées, zones stables de W1 en arrière-plan (projets à gauche, questions punaisées à droite), et la recherche toujours souveraine pour le pressé. W3 garde une valeur de repli : si la scène s'avère trop chargée en test, on sait vers quoi dégonfler.</p>
+</div>
+
+<script>
+function show(i, btn){
+  document.querySelectorAll('.variant').forEach((v,k)=>v.classList.toggle('active',k===i));
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  btn.classList.add('active');
+}
+</script>
+</body>
+</html>

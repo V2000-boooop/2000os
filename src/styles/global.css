@@ -1,0 +1,38 @@
+/* Vincent 2000 OS — style v1 volontairement neutre.
+   Le langage visuel définitif viendra avec 070_VISUAL_LANGUAGE.
+   Règle : le bureau est calme, les interactions sont exubérantes. */
+
+:root {
+  --ink: #23231f;
+  --mid: #7a7a72;
+  --line: #9a9a90;
+  --desk: #e9e8e2;
+  --panel: #dddcd4;
+  --win: #fbfbf8;
+  --paper: #f4f3ec;
+  --sel: #c9c8be;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  height: 100%;
+  overflow: hidden;
+  font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+  color: var(--ink);
+  background: var(--desk);
+  font-size: 13px;
+  line-height: 1.45;
+  -webkit-font-smoothing: antialiased;
+}
+
+button {
+  font-family: inherit;
+  font-size: inherit;
+  color: inherit;
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+::selection { background: var(--sel); }
