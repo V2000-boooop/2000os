@@ -197,7 +197,7 @@
         cabURL = img.src; // détourage impossible → image brute plutôt que rien
       }
     };
-    img.src = '/media/nightdrive/habitacle_v1.png';
+    img.src = '/media/nightdrive/habitacle_v1.webp';
   });
 
   // ---- la ville peinte (It13) : deux états, veilleuse / allumée ----
@@ -205,8 +205,8 @@
   // survol d'un lieu fond l'une dans l'autre SUR SA ZONE (sprite-crop CSS).
   // Les lieux du décor SONT les anciens dossiers (registre D12). Sans les
   // fichiers, la ville procédurale reste en poste (fallback).
-  const V_OFF = '/media/nightdrive/ville_off_v1.png';
-  const V_ON = '/media/nightdrive/ville_on_v1.png';
+  const V_OFF = '/media/nightdrive/ville_off_v1.webp';
+  const V_ON = '/media/nightdrive/ville_on_v1.webp';
   let paintCity = $state(false);
   onMount(() => {
     let ok = 0;

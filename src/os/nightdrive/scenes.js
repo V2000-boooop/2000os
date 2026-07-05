@@ -14,7 +14,7 @@
 // ne sont pas déposées, le clic fait l'open (ou la lueur). Dès que la paire
 // existe dans public/media/nightdrive/scenes/, la porte s'ouvre toute seule.
 //
-// Convention fichiers : /media/nightdrive/scenes/<id>_off_v1.png + _on_v1.png
+// Convention fichiers : /media/nightdrive/scenes/<id>_off_v1.webp + _on_v1.webp
 // (le quai, racine, garde ses fichiers historiques à la racine du dossier).
 // Zones des intérieurs : mesurées sur crops agrandis à réception des images
 // (une scène par itération, Vincent teste entre chaque).
@@ -33,8 +33,8 @@ export const SCENES = {
   // ---- LA RACINE : le quai, vu de l'habitacle (seule scène avec les
   // instruments vivants ; les intérieurs sont plein cadre) ----
   quai: {
-    off: '/media/nightdrive/ville_off_v1.png',
-    on: '/media/nightdrive/ville_on_v1.png',
+    off: '/media/nightdrive/ville_off_v1.webp',
+    on: '/media/nightdrive/ville_on_v1.webp',
     zones: [
       // zones v3 mesurées au pixel (It14-16), élargies de la bande de fondu
       // (masque doux du moteur : les bords fondent, le cœur reste plein)
@@ -57,8 +57,8 @@ export const SCENES = {
   // à réception (jukebox → Sons dans la taverne, bornes → arcade dans LA RIDE…) ----
   taverne: {
     parent: 'quai',
-    off: `${S}/taverne_off_v1.png`,
-    on: `${S}/taverne_on_v1.png`,
+    off: `${S}/taverne_off_v1.webp`,
+    on: `${S}/taverne_on_v1.webp`,
     // zones mesurées sur l'image (2026-07-04), fondu compris
     zones: [
       { id: 'vins',   x: 3.4,  y: 33.5, w: 9,    h: 22, open: { type: 'carnet', id: 'cavistes' }, lum: L('taverne_vins') },   // VIN DU MOIS → les cavistes de Vincent
@@ -68,8 +68,8 @@ export const SCENES = {
   },
   laride: {
     parent: 'quai',
-    off: `${S}/laride_off_v1.png`,
-    on: `${S}/laride_on_v1.png`,
+    off: `${S}/laride_off_v1.webp`,
+    on: `${S}/laride_on_v1.webp`,
     // zones mesurées sur préview annotée (2026-07-04), fondu compris.
     // Chaque lieu recevra son sound design (fichiers Vincent, 050).
     zones: [
@@ -82,9 +82,9 @@ export const SCENES = {
   },
   barque: {
     parent: 'quai',
-    off: `${S}/barque_base.png`,
-    on: `${S}/barque_base.png`,
-    // barque v9 (2026-07-05) : base = barque VIDE allumée (`barque_base.png`), + 2
+    off: `${S}/barque_base.webp`,
+    on: `${S}/barque_base.webp`,
+    // barque v9 (2026-07-05) : base = barque VIDE allumée (`barque_base.webp`), + 2
     // perso en CALQUES MOBILES détourés d'un fond vert (chroma key net + ombre au sol).
     // Base chaude unique pour off/on. Zones = mêmes % (cadrage conservé), fallback crop.
     water: { x: 0, y: 18, w: 100, h: 20 }, // bande d'eau animée (shimmer), au-dessus de la proue
@@ -123,8 +123,8 @@ export const SCENES = {
   },
   cathedrale: {
     parent: 'quai',
-    off: `${S}/cathedrale_off_v1.png`,
-    on: `${S}/cathedrale_on_v1.png`,
+    off: `${S}/cathedrale_off_v1.webp`,
+    on: `${S}/cathedrale_on_v1.webp`,
     // zones mesurées sur la paire (2026-07-04). Lumières d'abord : les
     // destinations (univers dark/angélique, discours, vocaux, pourboire)
     // seront branchées aux itérations suivantes — clic = lueur en attendant.
@@ -138,8 +138,8 @@ export const SCENES = {
   },
   pmu: {
     parent: 'quai',
-    off: `${S}/pmu_off_v1.png`,
-    on: `${S}/pmu_on_v1.png`,
+    off: `${S}/pmu_off_v1.webp`,
+    on: `${S}/pmu_on_v1.webp`,
     // zones mesurées sur préviews annotées (2026-07-04). Boîtes élargies
     // d'~14 % : le masque en fondu du moteur (détourage doux) mange les bords,
     // l'objet occupe le cœur plein de la zone.
@@ -155,15 +155,15 @@ export const SCENES = {
 
   // ---- LA BOÎTE À GANT (It28) : câblée en attente de l'image intérieure de
   // Vincent (paire off/on, éléments lumineux/pas lumineux). Dès que
-  // glovebox_off_v1.png / glovebox_on_v1.png sont déposés, la porte s'ouvre
+  // glovebox_off_v1.webp / glovebox_on_v1.webp sont déposés, la porte s'ouvre
   // seule (zoom-crossfade) ; la scène s'ouvre nue tant que les 6 objets ne sont
   // pas mesurés sur l'image. Objets prévus : cd→Médias · phone→nokia (le 3310) ·
   // fumeur→flamme/lueur · carte→destination · ticket AUTO IRATI→archive ·
   // flyer RAVE EUSKADI→evenement. ----
   glovebox: {
     parent: 'quai',
-    off: `${S}/glovebox_off_v1.png`,
-    on: `${S}/glovebox_on_v1.png`,
+    off: `${S}/glovebox_off_v1.webp`,
+    on: `${S}/glovebox_on_v1.webp`,
     // 6 objets mesurés sur la grille de glovebox_on (2026-07-04). Fondu générique
     // d'abord (crop de l'image on) : ils scintillent au survol. Détourage au pixel
     // (build_zone_masks) après validation des positions par Vincent. phone/flyer
