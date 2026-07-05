@@ -36,7 +36,7 @@
         <div class="info">
           <div class="l1">
             <span class="name">{name}</span>
-            <span class="status">{ok ? '' : def.fallback ? `absent → fallback ${def.fallback}` : 'absent'}</span>
+            <span class="status">{ok ? '' : 'absent'}</span>
           </div>
           <div class="l2">
             <span class="evt">{def.label}</span>

@@ -1,0 +1,7 @@
+LES DISQUES DES PLATINES (DJ booth de LA RIDE)
+
+Dépose ici tes fichiers son (wav/mp3/ogg), puis déclare chacun dans
+src/os/nightdrive/djbooth.js (une ligne : nom affiché + chemin).
+
+Les sons déjà dans l'OS (dossiers du bureau) apparaissent automatiquement
+dans le bac — ce dossier sert pour les exclusivités des platines.

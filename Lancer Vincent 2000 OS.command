@@ -21,11 +21,16 @@ if [ ! -d node_modules ]; then
   npm install --no-audit --no-fund
 fi
 
+# Toujours repartir PROPRE : tuer un ancien serveur resté sur le port 4321
+# (sinon on relance dans le vide et on voit l'ancienne version), et vider le cache Vite.
+lsof -ti tcp:4321 2>/dev/null | xargs kill -9 2>/dev/null
+rm -rf node_modules/.vite .astro dist 2>/dev/null
+
 # Ouvrir le navigateur une fois le serveur prêt.
-( sleep 4 && open "http://localhost:4321" ) &
+( sleep 6 && open "http://localhost:4321" ) &
 
 echo ""
 echo "▶ Vincent 2000 OS démarre — le navigateur va s'ouvrir tout seul."
 echo "  Pour arrêter : ferme cette fenêtre (ou Ctrl+C)."
 echo ""
-npm run dev
+npm run dev -- --force

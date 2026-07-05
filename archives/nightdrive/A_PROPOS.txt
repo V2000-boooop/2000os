@@ -1,0 +1,7 @@
+Matériel de travail Night Drive — conservé pour mémoire, jamais servi en prod.
+
+  archive_off_avant_retouche.png    ville v3 off avant retouche PIL (écritures « arcade »)
+  archive_on_avant_retouche.png     ville v3 on  avant retouche PIL
+  archive_ville_off_ancienne.png    ville v1 off (avant images « quai » tout-en-un)
+
+Les versions actives vivent dans public/media/nightdrive/.

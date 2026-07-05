@@ -1,0 +1,126 @@
+<svg viewBox="0 0 1150 810" xmlns="http://www.w3.org/2000/svg" font-family="ui-monospace, Menlo, monospace">
+  <style>
+    .ch { fill: none; stroke: #222; stroke-width: 2; }
+    .th { fill: none; stroke: #222; stroke-width: 1; }
+    .an { fill: #444; font-size: 12px; }
+    .lb { fill: #222; font-size: 11px; letter-spacing: 0.08em; }
+    .num { fill: #fff; font-size: 11px; font-weight: bold; text-anchor: middle; }
+    .numc { fill: #222; }
+    .dark { fill: #1c1c1c; }
+    .mot { stroke: #777; stroke-width: 1.2; stroke-dasharray: 4 3; fill: none; }
+  </style>
+
+  <text x="80" y="46" font-size="20" fill="#111" letter-spacing="2">PROTO B — LA BOÎTE SOUDÉE</text>
+  <text x="80" y="68" class="an">L'émetteur pirate assemblé à la main. Asymétrique, réparé, vivant. Le geste : un vrai levier d'antenne.</text>
+
+  <!-- antenne télescopique -->
+  <line x1="470" y1="150" x2="560" y2="80" class="ch"/>
+  <line x1="560" y1="80" x2="630" y2="36" class="th"/>
+  <line x1="630" y1="36" x2="676" y2="10" stroke="#222" stroke-width="0.7"/>
+  <circle cx="679" cy="8" r="3" class="th"/>
+  <path d="M 640 46 q 12 6 6 18" class="mot"/>
+  <circle cx="600" cy="96" r="10" class="numc"/><text x="600" y="100" class="num">6</text>
+
+  <!-- corps principal -->
+  <rect x="140" y="150" width="440" height="330" class="ch"/>
+  <!-- capot supérieur légèrement plus large (tôle pliée) -->
+  <rect x="132" y="138" width="456" height="14" class="ch"/>
+  <!-- pieds -->
+  <rect x="160" y="480" width="34" height="10" class="th"/>
+  <rect x="530" y="480" width="34" height="10" class="th"/>
+
+  <!-- 1 : galvanomètre rond récupéré -->
+  <circle cx="255" cy="250" r="72" class="ch"/>
+  <circle cx="255" cy="250" r="60" class="th"/>
+  <path d="M 205 268 A 54 54 0 0 1 305 268" class="th"/>
+  <line x1="255" y1="272" x2="222" y2="212" stroke="#222" stroke-width="2.5"/>
+  <circle cx="255" cy="272" r="5" fill="#222"/>
+  <text x="255" y="304" class="lb" text-anchor="middle" font-size="9">mA · LIGNE</text>
+  <circle cx="196" cy="196" r="10" class="numc"/><text x="196" y="200" class="num">1</text>
+
+  <!-- 2 : lucarne quartz -->
+  <rect x="380" y="196" width="104" height="80" class="ch"/>
+  <rect x="410" y="212" width="26" height="48" class="th"/>
+  <line x1="416" y1="212" x2="416" y2="260" class="th"/>
+  <line x1="430" y1="212" x2="430" y2="260" class="th"/>
+  <circle cx="464" cy="222" r="6" fill="#222"/>
+  <path d="M 464 208 q 8 -10 0 -18 M 456 214 q -12 -8 -4 -20" class="mot"/>
+  <text x="432" y="292" class="lb" text-anchor="middle" font-size="9">QUARTZ 88.70</text>
+  <circle cx="392" cy="208" r="10" class="numc"/><text x="392" y="212" class="num">2</text>
+
+  <!-- 3 : étiquette Dymo de travers -->
+  <g transform="rotate(-2 300 348)">
+    <rect x="210" y="336" width="180" height="26" class="dark"/>
+    <text x="222" y="354" fill="#e8e8e8" font-size="13" letter-spacing="4">V2000 TX</text>
+  </g>
+  <circle cx="202" cy="332" r="10" class="numc"/><text x="202" y="336" class="num">3</text>
+
+  <!-- 4 : levier d'antenne -->
+  <rect x="500" y="300" width="16" height="130" rx="8" class="ch"/>
+  <circle cx="508" cy="322" r="17" class="ch"/>
+  <circle cx="508" cy="322" r="9" fill="#222"/>
+  <text x="540" y="316" class="lb">ATELIER</text>
+  <text x="540" y="428" class="lb">TOI</text>
+  <path d="M 508 348 v 52" class="mot"/>
+  <path d="M 502 396 l 6 10 l 6 -10" fill="none" stroke="#777" stroke-width="1.2"/>
+  <circle cx="474" cy="300" r="10" class="numc"/><text x="474" y="304" class="num">4</text>
+
+  <!-- 5 : bouton poussoir + afficheur ruban -->
+  <rect x="210" y="390" width="230" height="34" class="dark"/>
+  <text x="222" y="413" fill="#e8e8e8" font-size="15" letter-spacing="3">FIELD·REC 12</text>
+  <circle cx="222" cy="384" r="10" class="numc" fill="#666"/><text x="222" y="388" class="num">5</text>
+
+  <!-- fils apparents + domino -->
+  <path d="M 580 440 q 40 10 58 -6 q 24 -20 46 -8" class="th"/>
+  <path d="M 580 452 q 46 18 70 2 q 20 -12 34 -4" class="th"/>
+  <rect x="688" y="418" width="34" height="40" class="th"/>
+  <line x1="688" y1="438" x2="722" y2="438" class="th"/>
+  <text x="688" y="474" class="an" font-size="10">domino</text>
+  <circle cx="654" cy="416" r="10" class="numc"/><text x="654" y="420" class="num">7</text>
+
+  <!-- grille d'aération -->
+  <g class="th">
+    <line x1="160" y1="440" x2="160" y2="466"/><line x1="170" y1="440" x2="170" y2="466"/>
+    <line x1="180" y1="440" x2="180" y2="466"/><line x1="190" y1="440" x2="190" y2="466"/>
+  </g>
+
+  <!-- légende -->
+  <text x="80" y="540" font-size="13" fill="#111" letter-spacing="1">COMMANDES &amp; GESTES</text>
+  <text x="80" y="564" class="an">1. Galvanomètre rond (pièce récupérée) — l'aiguille suit la ligne de l'atelier en continu, même son coupé.</text>
+  <text x="80" y="584" class="an">2. Lucarne — le quartz de la fréquence, LED qui pulse au rythme de la porteuse. On voit l'intérieur de la machine.</text>
+  <text x="80" y="604" class="an">3. Étiquette gaufrée posée de travers — la machine n'a pas de logo, elle a un nom donné à la main.</text>
+  <text x="80" y="624" class="an">4. LE LEVIER — le geste signature : abaisser = prendre l'antenne (ka-chunk), relever = la rendre.</text>
+  <text x="80" y="640" class="an">   Ouvrir un morceau depuis l'atelier abaisse le levier tout seul, sous tes yeux. Binaire, franc, mécanique.</text>
+  <text x="80" y="660" class="an">5. Ruban d'affichage — ce qui passe. Défilement lent ; « ??? » pour les fragments.</text>
+  <text x="80" y="680" class="an">6. Antenne télescopique — oscille imperceptiblement, en permanence. Déployée = ça émet.</text>
+  <text x="80" y="700" class="an">7. Fils apparents vers un domino — la machine est branchée quelque part. On ne saura jamais où exactement.</text>
+
+  <text x="80" y="736" font-size="13" fill="#111" letter-spacing="1">VIE AU REPOS</text>
+  <text x="80" y="758" class="an">Aiguille · pulse du quartz · oscillation de l'antenne · ruban qui défile · le levier qui claque seul</text>
+  <text x="80" y="774" class="an">quand l'atelier change de régime. Rien ne clignote pour attirer : tout bouge parce que ça fonctionne.</text>
+
+  <!-- inset Night Drive -->
+  <g>
+    <text x="720" y="540" font-size="13" fill="#111" letter-spacing="1">NIGHT DRIVE (D12)</text>
+    <rect x="720" y="556" width="350" height="120" class="th"/>
+    <rect x="738" y="596" width="140" height="52" class="ch"/>
+    <text x="748" y="588" class="an" font-size="10">la façade se détache…</text>
+    <path d="M 886 622 h 40" class="mot"/>
+    <path d="M 920 616 l 10 6 l -10 6" fill="none" stroke="#777" stroke-width="1.2"/>
+    <rect x="936" y="588" width="118" height="68" class="th"/>
+    <rect x="944" y="604" width="102" height="36" class="ch"/>
+    <text x="936" y="672" class="an" font-size="10">…et se clipse dans le dash</text>
+    <text x="738" y="700" class="an" font-size="10">Le geste culte des autoradios (façade amovible), inversé :</text>
+    <text x="738" y="716" class="an" font-size="10">la nuit, c'est le bureau qui prête sa façade à la voiture.</text>
+  </g>
+
+  <!-- cartouche -->
+  <g>
+    <rect x="760" y="30" width="310" height="72" class="th"/>
+    <line x1="760" y1="54" x2="1070" y2="54" class="th"/>
+    <line x1="760" y1="78" x2="1070" y2="78" class="th"/>
+    <text x="770" y="47" class="an">VINCENT 2000 OS — ÉMETTEUR « V2000 TX »</text>
+    <text x="770" y="71" class="an">PROTO B / 3 — wireframe fonctionnel</text>
+    <text x="770" y="95" class="an">2026-07-03 — aucune décision esthétique</text>
+  </g>
+</svg>

@@ -1,0 +1,233 @@
+<svg viewBox="0 0 1150 1010" xmlns="http://www.w3.org/2000/svg" font-family="ui-monospace, Menlo, monospace">
+  <style>
+    .ch { fill: none; stroke: #222; stroke-width: 2; }
+    .th { fill: none; stroke: #222; stroke-width: 1; }
+    .an { fill: #444; font-size: 12px; }
+    .lb { fill: #222; font-size: 11px; letter-spacing: 0.08em; }
+    .num { fill: #fff; font-size: 11px; font-weight: bold; text-anchor: middle; }
+    .numc { fill: #222; }
+    .dark { fill: #1c1c1c; }
+    .seg { fill: #e8e8e8; letter-spacing: 3px; }
+    .mot { stroke: #777; stroke-width: 1.2; stroke-dasharray: 4 3; fill: none; }
+    .weld { stroke: #222; stroke-width: 1; stroke-dasharray: 2 2; fill: none; }
+  </style>
+
+  <text x="80" y="42" font-size="20" fill="#111" letter-spacing="2">VERSION FINALE — LE PUPITRE SOUDÉ (C + B)</text>
+  <text x="80" y="63" class="an">Console de diffusion assemblée à la main. Geste culte : le crossfader ATELIER ⟷ TOI. Rien n'est assorti, tout fonctionne.</text>
+
+  <!-- antenne télescopique -->
+  <line x1="980" y1="112" x2="1050" y2="58" class="ch"/>
+  <line x1="1050" y1="58" x2="1100" y2="26" class="th"/>
+  <line x1="1100" y1="26" x2="1132" y2="8" stroke="#222" stroke-width="0.7"/>
+  <circle cx="1134" cy="7" r="3" class="th"/>
+  <path d="M 1090 40 q 10 8 4 18" class="mot"/>
+  <circle cx="1024" cy="86" r="10" class="numc"/><text x="1024" y="90" class="num">9</text>
+
+  <!-- bandeau vertical (meter bridge) -->
+  <rect x="150" y="112" width="850" height="112" class="ch"/>
+  <!-- pli / soudure visible -->
+  <path d="M 150 224 h 850" class="weld"/>
+
+  <!-- 1 : galvanomètre rond récupéré (ATELIER) -->
+  <circle cx="248" cy="168" r="48" class="ch"/>
+  <circle cx="248" cy="168" r="39" class="th"/>
+  <path d="M 216 182 A 36 36 0 0 1 280 182" class="th"/>
+  <line x1="222" y1="176" x2="228" y2="170" class="th"/>
+  <line x1="248" y1="148" x2="248" y2="156" class="th"/>
+  <line x1="274" y1="176" x2="268" y2="170" class="th"/>
+  <line x1="248" y1="184" x2="226" y2="150" stroke="#222" stroke-width="2.2"/>
+  <circle cx="248" cy="184" r="4" fill="#222"/>
+  <text x="248" y="230" class="lb" text-anchor="middle" font-size="9">ATELIER · mA</text>
+  <circle cx="206" cy="130" r="10" class="numc"/><text x="206" y="134" class="num">1</text>
+
+  <!-- 2 : VU rectangulaire dépareillé (ANTENNE) -->
+  <rect x="330" y="132" width="150" height="66" rx="3" class="ch"/>
+  <path d="M 356 186 A 56 56 0 0 1 454 186" class="th"/>
+  <line x1="405" y1="188" x2="432" y2="146" stroke="#222" stroke-width="2.2"/>
+  <circle cx="405" cy="188" r="4" fill="#222"/>
+  <text x="405" y="212" class="lb" text-anchor="middle" font-size="9">ANTENNE · VU</text>
+  <circle cx="342" cy="142" r="10" class="numc"/><text x="342" y="146" class="num">2</text>
+
+  <!-- 3 : ruban + fréquence + lucarne quartz -->
+  <rect x="516" y="126" width="286" height="40" class="dark"/>
+  <text x="530" y="153" class="seg" font-size="17">DEMO·HANGAR 3</text>
+  <line x1="782" y1="146" x2="760" y2="146" class="mot"/>
+  <rect x="516" y="174" width="100" height="32" class="dark"/>
+  <text x="528" y="197" class="seg" font-size="16">88.70</text>
+  <rect x="636" y="172" width="74" height="36" class="ch"/>
+  <rect x="654" y="178" width="16" height="24" class="th"/>
+  <line x1="658" y1="178" x2="658" y2="202" class="th"/>
+  <line x1="666" y1="178" x2="666" y2="202" class="th"/>
+  <circle cx="692" cy="184" r="5" fill="#222"/>
+  <path d="M 692 172 q 7 -8 0 -15" class="mot"/>
+  <text x="673" y="220" class="lb" text-anchor="middle" font-size="8">QUARTZ 88.70</text>
+  <circle cx="528" cy="136" r="10" class="numc" fill="#666"/><text x="528" y="140" class="num">3</text>
+
+  <!-- 4 : ON AIR sous cage -->
+  <circle cx="856" cy="156" r="17" class="ch"/>
+  <circle cx="856" cy="156" r="8" fill="#222"/>
+  <g class="th">
+    <line x1="840" y1="146" x2="872" y2="146"/><line x1="838" y1="156" x2="874" y2="156"/>
+    <line x1="840" y1="166" x2="872" y2="166"/>
+  </g>
+  <text x="856" y="192" class="lb" text-anchor="middle" font-size="9">ON AIR</text>
+  <circle cx="886" cy="134" r="10" class="numc"/><text x="886" y="138" class="num">4</text>
+
+  <!-- 5 : HP témoin -->
+  <circle cx="946" cy="168" r="28" class="ch"/>
+  <g class="th">
+    <line x1="928" y1="158" x2="964" y2="158"/><line x1="924" y1="168" x2="968" y2="168"/>
+    <line x1="928" y1="178" x2="964" y2="178"/>
+  </g>
+  <circle cx="972" cy="140" r="10" class="numc"/><text x="972" y="144" class="num">5</text>
+
+  <!-- face inclinée -->
+  <path d="M 150 224 L 1000 224 L 1046 448 L 104 448 Z" class="ch"/>
+  <!-- vis apparentes (une manque) -->
+  <g class="th">
+    <circle cx="170" cy="242" r="6"/><line x1="166" y1="238" x2="174" y2="246"/>
+    <circle cx="982" cy="242" r="6"/><line x1="978" y1="246" x2="986" y2="238"/>
+    <circle cx="126" cy="430" r="6"/><line x1="122" y1="426" x2="130" y2="434"/>
+    <circle cx="1024" cy="430" r="6" stroke-dasharray="2 2"/>
+  </g>
+  <text x="1004" y="416" class="an" font-size="9">(vis manquante)</text>
+
+  <!-- 6 : étiquette Dymo de travers -->
+  <g transform="rotate(-2 300 262)">
+    <rect x="210" y="250" width="176" height="25" class="dark"/>
+    <text x="224" y="268" fill="#e8e8e8" font-size="13" letter-spacing="4">V2000 TX</text>
+  </g>
+  <circle cx="198" cy="248" r="10" class="numc"/><text x="198" y="252" class="num">6</text>
+
+  <!-- 7 : LE CROSSFADER -->
+  <rect x="292" y="330" width="600" height="10" class="th"/>
+  <line x1="296" y1="335" x2="888" y2="335" stroke="#222" stroke-width="3"/>
+  <rect x="318" y="312" width="36" height="48" class="ch"/>
+  <line x1="336" y1="312" x2="336" y2="360" class="th"/>
+  <text x="238" y="300" class="lb" font-size="14">ATELIER</text>
+  <text x="856" y="300" class="lb" font-size="14">TOI</text>
+  <!-- repère mi-course -->
+  <line x1="592" y1="322" x2="592" y2="350" class="th"/>
+  <text x="592" y="372" class="lb" text-anchor="middle" font-size="9">✕ mi-course</text>
+  <!-- graduations -->
+  <g class="th">
+    <line x1="360" y1="346" x2="360" y2="353"/><line x1="437" y1="346" x2="437" y2="353"/>
+    <line x1="514" y1="346" x2="514" y2="353"/><line x1="670" y1="346" x2="670" y2="353"/>
+    <line x1="747" y1="346" x2="747" y2="353"/><line x1="824" y1="346" x2="824" y2="353"/>
+  </g>
+  <path d="M 372 322 h 80" class="mot"/>
+  <path d="M 444 316 l 12 6 l -12 6" fill="none" stroke="#777" stroke-width="1.2"/>
+  <text x="380" y="312" class="an" font-size="10">motorisé (moteur audible)</text>
+  <circle cx="298" cy="308" r="10" class="numc"/><text x="298" y="312" class="num">7</text>
+
+  <!-- 8 : ÉJECT (bouton décollé) + 10 : levier ÉCOUTE -->
+  <circle cx="952" cy="308" r="19" class="ch"/>
+  <circle cx="952" cy="308" r="12" class="th"/>
+  <text x="952" y="346" class="lb" text-anchor="middle">ÉJECT</text>
+  <circle cx="982" cy="288" r="10" class="numc"/><text x="982" y="292" class="num">8</text>
+  <g>
+    <rect x="168" y="392" width="34" height="16" class="ch"/>
+    <line x1="185" y1="398" x2="206" y2="374" stroke="#222" stroke-width="3.5"/>
+    <circle cx="207" cy="372" r="5" fill="#222"/>
+    <text x="222" y="404" class="lb">ÉCOUTE</text>
+    <circle cx="158" cy="380" r="10" class="numc"/><text x="158" y="384" class="num">10</text>
+  </g>
+
+  <!-- fils + domino + pieds -->
+  <path d="M 1046 430 q 42 8 60 -8 q 20 -16 38 -8" class="th"/>
+  <path d="M 1042 442 q 50 16 74 0" class="th"/>
+  <rect x="1108" y="404" width="30" height="38" class="th"/>
+  <line x1="1108" y1="423" x2="1138" y2="423" class="th"/>
+  <rect x="150" y="448" width="36" height="10" class="th"/>
+  <rect x="960" y="448" width="36" height="7" class="th"/>
+  <rect x="960" y="455" width="36" height="5" class="weld"/>
+  <text x="1004" y="462" class="an" font-size="9">pied droit : cale en bois</text>
+
+  <!-- LÉGENDE -->
+  <text x="80" y="502" font-size="13" fill="#111" letter-spacing="1">ÉLÉMENTS &amp; GESTES</text>
+  <text x="80" y="524" class="an">1. Galvanomètre rond RÉCUPÉRÉ (gradué en mA, ça ne veut rien dire, il marche) — la ligne ATELIER. Danse en continu, même son coupé.</text>
+  <text x="80" y="542" class="an">2. VU rectangulaire dépareillé — l'ANTENNE (ce qui part dans l'onde). Les deux aiguilles se désynchronisent à la prise d'antenne.</text>
+  <text x="80" y="560" class="an">3. Ruban titre (défilement lent, « ??? » pour les fragments) · fréquence 88.70 · LUCARNE sur le quartz, LED qui pulse avec la porteuse.</text>
+  <text x="80" y="578" class="an">4. ON AIR — une ampoule sous cage grillagée. Jamais éteinte, respiration lente (~4 s).</text>
+  <text x="80" y="596" class="an">5. Haut-parleur témoin — le son sort « de là » (spatialisation légère vers la fenêtre).</text>
+  <text x="80" y="614" class="an">6. Étiquette gaufrée posée de travers — pas de logo : un nom donné à la main.</text>
+  <text x="80" y="632" class="an">7. LE CROSSFADER — le geste culte. Course longue, repère ✕ à mi-course. Motorisé : il glisse tout seul quand l'atelier ou toi</text>
+  <text x="80" y="648" class="an">   prenez l'antenne — et tu peux toujours poser la main dessus et le pousser toi-même (il cède, moteur débrayé).</text>
+  <text x="80" y="666" class="an">8. ÉJECT — bouton rond au vernis usé, légèrement décollé. Rendre l'antenne.</text>
+  <text x="80" y="684" class="an">9. Antenne télescopique — oscille imperceptiblement. Déployée = ça émet. 10. Petit levier bakélite ÉCOUTE — geste secondaire :</text>
+  <text x="80" y="700" class="an">   couper le son (ka-chik). Ne coupe RIEN d'autre : aiguilles, fader, ruban continuent leur vie en silence.</text>
+
+  <!-- LES QUATRE ÉTATS -->
+  <text x="80" y="742" font-size="13" fill="#111" letter-spacing="1">LES QUATRE ÉTATS DU FADER</text>
+  <g>
+    <rect x="80" y="756" width="242" height="104" class="th"/>
+    <text x="94" y="776" class="lb" font-size="10">① ÉMISSION (défaut)</text>
+    <line x1="100" y1="800" x2="300" y2="800" stroke="#222" stroke-width="2"/>
+    <rect x="106" y="792" width="14" height="16" class="ch"/>
+    <path d="M 112 818 q 8 6 0 12 q -8 6 0 12" class="mot"/>
+    <text x="94" y="850" class="an" font-size="10">l'atelier émet seul · micro-</text>
+    <text x="94" y="864" class="an" font-size="10">ajustements du fader</text>
+  </g>
+  <g>
+    <rect x="336" y="756" width="242" height="104" class="th"/>
+    <text x="350" y="776" class="lb" font-size="10">② PRISE D'ANTENNE</text>
+    <line x1="356" y1="800" x2="556" y2="800" stroke="#222" stroke-width="2"/>
+    <rect x="516" y="792" width="14" height="16" class="ch"/>
+    <path d="M 372 806 h 130" class="mot"/>
+    <path d="M 494 800 l 12 6 l -12 6" fill="none" stroke="#777" stroke-width="1.2"/>
+    <text x="350" y="836" class="an" font-size="10">tu ouvres un morceau :</text>
+    <text x="350" y="850" class="an" font-size="10">le fader GLISSE vers TOI</text>
+    <text x="350" y="864" class="an" font-size="10">(moteur audible, ~1 s)</text>
+  </g>
+  <g>
+    <rect x="592" y="756" width="242" height="104" class="th"/>
+    <text x="606" y="776" class="lb" font-size="10">③ MI-COURSE ✕</text>
+    <line x1="612" y1="800" x2="812" y2="800" stroke="#222" stroke-width="2"/>
+    <rect x="705" y="792" width="14" height="16" class="ch"/>
+    <path d="M 640 822 q 20 -14 40 0 q 20 14 40 0" class="th"/>
+    <path d="M 664 828 q 20 -14 40 0 q 20 14 40 0" class="mot"/>
+    <text x="606" y="850" class="an" font-size="10">une seconde où l'on entend</text>
+    <text x="606" y="864" class="an" font-size="10">les deux mondes se croiser</text>
+  </g>
+  <g>
+    <rect x="848" y="756" width="242" height="104" class="th"/>
+    <text x="862" y="776" class="lb" font-size="10">④ RETOUR (fin ou ÉJECT)</text>
+    <line x1="868" y1="800" x2="1068" y2="800" stroke="#222" stroke-width="2"/>
+    <rect x="880" y="792" width="14" height="16" class="ch"/>
+    <path d="M 1040 806 h -130" class="mot"/>
+    <path d="M 924 800 l -12 6 l 12 -6 l -12 -6" fill="none" stroke="#777" stroke-width="1.2"/>
+    <text x="862" y="836" class="an" font-size="10">retour doux vers ATELIER —</text>
+    <text x="862" y="850" class="an" font-size="10">l'émission a CONTINUÉ sans</text>
+    <text x="862" y="864" class="an" font-size="10">nous, on la retrouve plus loin</text>
+  </g>
+
+  <!-- VIE AU REPOS + NIGHT DRIVE -->
+  <text x="80" y="900" font-size="13" fill="#111" letter-spacing="1">VIE AU REPOS</text>
+  <text x="80" y="920" class="an">Deux aiguilles dépareillées qui dansent · fader qui se réajuste seul · pulse du quartz · respiration ON AIR ·</text>
+  <text x="80" y="936" class="an">ruban qui défile · antenne qui oscille · parfois « ??? » s'affiche et le galvanomètre s'affole une seconde.</text>
+  <text x="80" y="952" class="an">Une commande qui bouge sans main humaine = quelqu'un est aux manettes. L'atelier.</text>
+
+  <g>
+    <text x="720" y="900" font-size="13" fill="#111" letter-spacing="1">NIGHT DRIVE (D12)</text>
+    <rect x="720" y="912" width="370" height="66" class="th"/>
+    <rect x="736" y="928" width="130" height="38" class="ch"/>
+    <line x1="746" y1="952" x2="856" y2="952" stroke="#222" stroke-width="2"/>
+    <rect x="782" y="946" width="12" height="12" class="th"/>
+    <path d="M 874 946 h 26" class="mot"/>
+    <path d="M 894 940 l 10 6 l -10 6" fill="none" stroke="#777" stroke-width="1.2"/>
+    <rect x="912" y="928" width="164" height="38" class="ch"/>
+    <line x1="924" y1="952" x2="1064" y2="952" stroke="#222" stroke-width="2"/>
+    <rect x="986" y="946" width="10" height="12" class="th"/>
+    <text x="736" y="924" class="an" font-size="10">le pupitre s'aplatit en façade 1-DIN ; le crossfader devient le curseur du dash (88.70)</text>
+  </g>
+
+  <!-- cartouche -->
+  <g>
+    <rect x="760" y="24" width="310" height="60" class="th"/>
+    <line x1="760" y1="44" x2="1070" y2="44" class="th"/>
+    <line x1="760" y1="64" x2="1070" y2="64" class="th"/>
+    <text x="768" y="39" class="an" font-size="11">VINCENT 2000 OS — ÉMETTEUR « V2000 TX »</text>
+    <text x="768" y="59" class="an" font-size="11">VERSION FINALE C+B — wireframe fonctionnel</text>
+    <text x="768" y="79" class="an" font-size="11">2026-07-03 — aucune décision esthétique</text>
+  </g>
+</svg>

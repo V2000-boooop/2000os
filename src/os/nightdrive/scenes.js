@@ -1,0 +1,180 @@
+// SCÈNES GIGOGNES (D15) — le registre de l'arbre. Contrat stable (D3) :
+// le composant ne connaît que ce schéma.
+//
+// Une scène = paire off/on au cadrage identique + zones en % de l'image.
+// Chaque zone fait UNE de ces choses :
+//   goto: 'id'            → descendre dans la scène enfant (zoom-crossfade)
+//   open: { type, id }    → ouvrir du contenu de l'OS (arcade, dossier, app…)
+//                           types vivants : 'arcade' · 'mantra' (phrase de
+//                           comptoir) — extensible (jeu à gratter, news…)
+//   exit: true            → ressortir vers la scène parente (la porte, la
+//                           fenêtre — en plus du seuil bas et d'Échap)
+//   (rien)                → lueur brève, pas encore branchée
+// goto + open ensemble = fallback : tant que les images de la scène enfant
+// ne sont pas déposées, le clic fait l'open (ou la lueur). Dès que la paire
+// existe dans public/media/nightdrive/scenes/, la porte s'ouvre toute seule.
+//
+// Convention fichiers : /media/nightdrive/scenes/<id>_off_v1.png + _on_v1.png
+// (le quai, racine, garde ses fichiers historiques à la racine du dossier).
+// Zones des intérieurs : mesurées sur crops agrandis à réception des images
+// (une scène par itération, Vincent teste entre chaque).
+
+const S = '/media/nightdrive/scenes';
+
+// DÉTOURAGE AU PIXEL : chaque zone peut porter un masque alpha calculé sur
+// le diff off/on réel (la surbrillance épouse la forme exacte de l'objet).
+// Génération : python3 tools/build_zone_masks.py — à relancer à chaque
+// nouvelle zone / nouvelle version d'images. Sans masque : fondu générique.
+const L = (n) => `${S}/lights/${n}.png`;
+
+export const ROOT = 'quai';
+
+export const SCENES = {
+  // ---- LA RACINE : le quai, vu de l'habitacle (seule scène avec les
+  // instruments vivants ; les intérieurs sont plein cadre) ----
+  quai: {
+    off: '/media/nightdrive/ville_off_v1.png',
+    on: '/media/nightdrive/ville_on_v1.png',
+    zones: [
+      // zones v3 mesurées au pixel (It14-16), élargies de la bande de fondu
+      // (masque doux du moteur : les bords fondent, le cœur reste plein)
+      { id: 'cathedrale', x: 6.9,  y: 3.6,  w: 15.1, h: 30.7, goto: 'cathedrale', lum: L('quai_cathedrale') }, // la tour gauche — jamais sur le montant
+      { id: 'barque',     x: 40.7, y: 37.7, w: 7.7,  h: 7,    goto: 'barque',     lum: L('quai_barque') },     // les 2 gars sur l'eau
+      { id: 'taverne',    x: 61.5, y: 31.4, w: 6.7,  h: 3.8,  goto: 'taverne',    lum: L('quai_taverne') },    // l'écriteau seul
+      { id: 'laride',     x: 74.5, y: 17.7, w: 8.7,  h: 16.9, goto: 'laride', open: { type: 'arcade' }, lum: L('quai_laride') }, // le club — fallback : la salle It9
+      { id: 'pmu',        x: 87.7, y: 32.4, w: 4.6,  h: 6.4,  goto: 'pmu',        lum: L('quai_pmu') },        // le bar-tabac
+      { id: 'radio',      x: 84,   y: 4.1,  w: 4.5,  h: 15.4, open: { type: 'internet' }, lum: L('quai_radio') },      // la tour → Internet (séquence modem : porteuse introuvable)
+      // LA BOÎTE À GANT (It28) : le panneau passager de la planche, à droite (sous
+      // l'horloge). Détourée comme les enseignes → scintille au survol, clic = on
+      // zoome dans l'intérieur (scène gigogne). % estimés sur ville_on_v1 — Vincent recale.
+      { id: 'glovebox',   x: 64,   y: 54.3, w: 19.6, h: 11.8, goto: 'glovebox', z: 5, lum: L('quai_glovebox') }, // le clapet arrondi seul (mesuré sur ville_on) ; z:5 → au-dessus de la blockzone
+      // HOTEL DU COMMERCE, LE BISTRONOME : décor, ne s'allument pas
+    ],
+  },
+
+  // ---- LES INTÉRIEURS : câblés, en attente de leurs paires d'images.
+  // zones: [] = la scène s'ouvre nue ; les objets seront mesurés et branchés
+  // à réception (jukebox → Sons dans la taverne, bornes → arcade dans LA RIDE…) ----
+  taverne: {
+    parent: 'quai',
+    off: `${S}/taverne_off_v1.png`,
+    on: `${S}/taverne_on_v1.png`,
+    // zones mesurées sur l'image (2026-07-04), fondu compris
+    zones: [
+      { id: 'vins',   x: 3.4,  y: 33.5, w: 9,    h: 22, open: { type: 'carnet', id: 'cavistes' }, lum: L('taverne_vins') },   // VIN DU MOIS → les cavistes de Vincent
+      { id: 'manger', x: 80.8, y: 32.5, w: 13.5, h: 25, open: { type: 'carnet', id: 'restos' },   lum: L('taverne_manger') }, // À MANGER → ses tables
+      { id: 'phone',  x: 39,   y: 83,   w: 15,   h: 17, open: { type: 'nokia' },                  lum: L('taverne_phone') },  // le 3310 sur la table : menu, contacts, Snake
+    ],
+  },
+  laride: {
+    parent: 'quai',
+    off: `${S}/laride_off_v1.png`,
+    on: `${S}/laride_on_v1.png`,
+    // zones mesurées sur préview annotée (2026-07-04), fondu compris.
+    // Chaque lieu recevra son sound design (fichiers Vincent, 050).
+    zones: [
+      { id: 'tableau',    x: 1,    y: 30.8, w: 9.5,  h: 17.5, open: { type: 'cocktails' },   lum: L('laride_tableau') }, // la carte : cocktails réels, verre animé
+      { id: 'photobooth', x: 62.6, y: 22,   w: 13.4, h: 36,   open: { type: 'photobooth' }, lum: L('laride_photobooth') }, // la cabine → les photos de soirée (pellicule)
+      { id: 'vestiaire',  x: 75,   y: 23,   w: 11,   h: 37,   open: { type: 'friperie' },   lum: L('laride_vestiaire') },  // le portant → la friperie (chaque fringue cliquable)
+      { id: 'toilettes',  x: 88.5, y: 29,   w: 10.8, h: 36.5, open: { type: 'toilettes' },  lum: L('laride_toilettes') },  // le mur des chiottes → lieu à sound design
+      { id: 'djbooth',    x: 52,   y: 56,   w: 42.5, h: 37,   open: { type: 'dj' },        lum: L('laride_djbooth') },    // la cabine : deux CDJ, piste A / piste B
+    ],
+  },
+  barque: {
+    parent: 'quai',
+    off: `${S}/barque_base.png`,
+    on: `${S}/barque_base.png`,
+    // barque v9 (2026-07-05) : base = barque VIDE allumée (`barque_base.png`), + 2
+    // perso en CALQUES MOBILES détourés d'un fond vert (chroma key net + ombre au sol).
+    // Base chaude unique pour off/on. Zones = mêmes % (cadrage conservé), fallback crop.
+    water: { x: 0, y: 18, w: 100, h: 20 }, // bande d'eau animée (shimmer), au-dessus de la proue
+    // (vacillement lampe retiré — on fera la vie de la flamme autrement, en calque.)
+    zones: [
+      { id: 'lampe',      x: 45, y: 49, w: 14, h: 22, open: { type: 'ciel' }, boost: 1.1, light: true }, // la lanterne → ciel étoilé (light: pas de crop de survol, sa vie = le halo continu)
+      { id: 'radio',      x: 11, y: 62, w: 20, h: 29, open: { type: 'k7' } },                             // la boombox → les cassettes
+      { id: 'weed',       x: 29, y: 72, w: 13, h: 16, open: { type: 'roll' } },                           // le sachet → « rouler un joint ? Myrtille / Stick »
+      { id: 'pizza',      x: 45, y: 68, w: 21, h: 22, open: { type: 'carnet', id: 'pizzerias' } },        // la pizza → les pizzerias
+      { id: 'cathedrale', x: 0,  y: 1,  w: 17, h: 20, goto: 'cathedrale', boost: 1.2 },                   // les tours, en haut à gauche
+      { id: 'taverne',    x: 59, y: 20, w: 11, h: 6,  goto: 'taverne', boost: 1.75, aura: '#ffb24a' },    // LA TAVERNE
+      { id: 'laride',     x: 73, y: 17, w: 11, h: 8,  goto: 'laride',  boost: 1.75, aura: '#ff3140' },    // LA RIDE, néon rouge
+      { id: 'pmu',        x: 88, y: 19, w: 10, h: 7,  goto: 'pmu',     boost: 1.75, aura: '#46e05a' },    // le PMU
+    ],
+    // CALQUES MOBILES : perso détourés du fond vert (sprite unique + ombre au sol).
+    // Survol = plein feu, idle CSS. % faciles à ajuster (« bouge / plus grand / petit »).
+    personnages: [
+      // MYRTILLE (la punk) : jeu de poses. `idle` = pose actuelle ; `radio` (danse quand
+      // la boombox joue) et `roll` (roule un joint) sont des sprites fond vert à générer
+      // → tant qu'ils manquent, fallback sur idle (rien ne casse).
+      // toutes les poses de Myrtille partagent la MÊME bbox (idle + 7 frames) → calage parfait, zéro saut.
+      { id: 'myrtille', name: 'Myrtille', x: 35, y: 20, w: 16, h: 44, anim: 'lean',
+        poses: {
+          idle: `${S}/perso/myrtille_idle.webp`,
+          // séquence « roule un joint » : 1-4 elle roule, 5 briquet, 6 allume, 7 fume
+          roll: [1,2,3,4,5,6,7].map((n) => `${S}/perso/myrtille_roll_${n}.webp`),
+          // séquence « souffle » COMPLÈTE (8 frames) : elle souffle, crache, le rond monte au
+          // coin et se dissipe — toute la fumée est peinte dans les frames (aucun rond codé).
+          blow: [1,2,3,4,5,6,7,8].map((n) => `${S}/perso/myrtille_blow_${n}.webp`),
+          smoke: `${S}/perso/myrtille_roll_7.webp`, // pose « fume » tenue entre les taffes
+        } },
+      // STICK (le raver) : LÉVITE (idle qui monte/descend, ombre-plancher réactive).
+      { id: 'stick', name: 'Stick', x: 62, y: 27, w: 22, h: 44, anim: 'levit', shadow: { x: 63.5, y: 71, w: 17, h: 4.5 },
+        poses: { idle: `${S}/perso/raver.webp` } },
+    ],
+  },
+  cathedrale: {
+    parent: 'quai',
+    off: `${S}/cathedrale_off_v1.png`,
+    on: `${S}/cathedrale_on_v1.png`,
+    // zones mesurées sur la paire (2026-07-04). Lumières d'abord : les
+    // destinations (univers dark/angélique, discours, vocaux, pourboire)
+    // seront branchées aux itérations suivantes — clic = lueur en attendant.
+    zones: [
+      { id: 'vitrail_dark',  x: 3,    y: 4,  w: 19,   h: 59, open: { type: 'univers', id: 'dark' }, lum: L('cathedrale_vitrail_dark') },  // vitrail démoniaque → univers dark psyché catholique + son
+      { id: 'vitrail_ange',  x: 27.5, y: 7,  w: 12,   h: 47, open: { type: 'univers', id: 'ange' }, lum: L('cathedrale_vitrail_ange') },  // vitrail joyeux → même univers en angélique + son
+      { id: 'pupitre',       x: 56,   y: 20, w: 14,   h: 38, open: { type: 'sermon' },   lum: L('cathedrale_pupitre') },       // l'autel/pupitre → discours à la con (boîte haute : le halo respire au-dessus de la flèche)
+      { id: 'confessionnal', x: 76.5, y: 28, w: 10,   h: 35, boost: 1.05, open: { type: 'confess' }, lum: L('cathedrale_confessionnal') }, // « Là pour vous parler » → vocaux en boucle
+      { id: 'bougies',       x: 84,   y: 52, w: 15.5, h: 23, open: { type: 'pourboire' }, lum: L('cathedrale_bougies') },       // les bougies → donner une pièce à l'artiste
+    ],
+  },
+  pmu: {
+    parent: 'quai',
+    off: `${S}/pmu_off_v1.png`,
+    on: `${S}/pmu_on_v1.png`,
+    // zones mesurées sur préviews annotées (2026-07-04). Boîtes élargies
+    // d'~14 % : le masque en fondu du moteur (détourage doux) mange les bords,
+    // l'objet occupe le cœur plein de la zone.
+    zones: [
+      { id: 'fenetre',  x: 0,    y: 0,    w: 21,   h: 72,   exit: true,                  lum: L('pmu_fenetre') },  // la porte vitrée : on ressort sur le quai
+      { id: 'fdj',      x: 22.2, y: 32,   w: 19.1, h: 41.8, open: { type: 'grattage' },  lum: L('pmu_fdj') },      // présentoir Française des Jeux → le jeu à gratter (vrai grattage)
+      { id: 'tele',     x: 57.5, y: 9,    w: 20,   h: 23,   open: { type: 'paris' },     lum: L('pmu_tele') },     // la télé PARIS SPORTIFS → l'écran de paris qui tease
+      { id: 'ricard',   x: 61.5, y: 37.5, w: 12.2, h: 28.3, open: { type: 'evenement' }, lum: L('pmu_ricard') },   // bouteille + verre → l'affiche du prochain événement
+      { id: 'terminal', x: 80.9, y: 45.2, w: 13.4, h: 23.2, open: { type: 'mantra' },    lum: L('pmu_terminal') }, // borne PMU → phrase de comptoir
+      { id: 'sudouest', x: 0.7,  y: 75,   w: 24.5, h: 25,   open: { type: 'journal' },   lum: L('pmu_sudouest') }, // le journal → la une du Sud Ouest de la nuit
+    ],
+  },
+
+  // ---- LA BOÎTE À GANT (It28) : câblée en attente de l'image intérieure de
+  // Vincent (paire off/on, éléments lumineux/pas lumineux). Dès que
+  // glovebox_off_v1.png / glovebox_on_v1.png sont déposés, la porte s'ouvre
+  // seule (zoom-crossfade) ; la scène s'ouvre nue tant que les 6 objets ne sont
+  // pas mesurés sur l'image. Objets prévus : cd→Médias · phone→nokia (le 3310) ·
+  // fumeur→flamme/lueur · carte→destination · ticket AUTO IRATI→archive ·
+  // flyer RAVE EUSKADI→evenement. ----
+  glovebox: {
+    parent: 'quai',
+    off: `${S}/glovebox_off_v1.png`,
+    on: `${S}/glovebox_on_v1.png`,
+    // 6 objets mesurés sur la grille de glovebox_on (2026-07-04). Fondu générique
+    // d'abord (crop de l'image on) : ils scintillent au survol. Détourage au pixel
+    // (build_zone_masks) après validation des positions par Vincent. phone/flyer
+    // branchés ; cd/fumeur/carte/ticket = lueur en attendant leur destination.
+    zones: [
+      { id: 'phone',  x: 20,   y: 33.5, w: 11.5, h: 28,   open: { type: 'nokia' } },     // le 3310 → menu/contacts/Snake
+      { id: 'flyer',  x: 32.5, y: 40,   w: 11.5, h: 18.5, open: { type: 'evenement' } }, // RAVE EUSKADI → l'affiche
+      { id: 'fumeur', x: 46.5, y: 40.5, w: 14.5, h: 18 },                                 // OCB + briquet → lueur (la flamme vit dans l'image on)
+      { id: 'cd',     x: 62,   y: 41,   w: 17,   h: 20.5 },                               // 2000 IS LOVE → Médias (à brancher)
+      { id: 'ticket', x: 58,   y: 62,   w: 20,   h: 15 },                                 // AUTO IRATI → archive (à brancher)
+      { id: 'carte',  x: 25.5, y: 57,   w: 31.5, h: 21 },                                 // la carte → destination (à brancher)
+    ],
+  },
+};

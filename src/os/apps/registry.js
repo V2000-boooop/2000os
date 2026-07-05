@@ -3,7 +3,7 @@
 
 import FolderApp from './FolderApp.svelte';
 import NoteApp from './NoteApp.svelte';
-import PlayerApp from './PlayerApp.svelte';
+import EmetteurApp from './EmetteurApp.svelte';
 import ViewerApp from './ViewerApp.svelte';
 import StubApp from './StubApp.svelte';
 import ExeApp from './ExeApp.svelte';
@@ -12,7 +12,7 @@ import SoundLabApp from './SoundLabApp.svelte';
 export const registry = {
   folder: { component: FolderApp },
   note: { component: NoteApp },
-  player: { component: PlayerApp },
+  emetteur: { component: EmetteurApp },
   viewer: { component: ViewerApp },
   stub: { component: StubApp },
   exe: { component: ExeApp },

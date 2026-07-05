@@ -3,6 +3,7 @@
 
 import { openWindow } from './wm.svelte.js';
 import { playTrack } from './player.svelte.js';
+import { play } from './sound.svelte.js';
 
 export function openItem(item, ctx = {}) {
   if (!item) return;
@@ -51,5 +52,8 @@ export function openItem(item, ctx = {}) {
     case 'lab':
       openWindow({ appId: 'soundlab', key: 'soundlab', title: 'UI Sound Lab', w: 560, h: 470 });
       break;
+    default:
+      // L'OS ne sait pas ouvrir cet item : refus doux, sans punition.
+      play('deny');
   }
 }

@@ -1,24 +1,17 @@
 // Scène restaurée — règle « la machine ne démarre jamais » (docs/030_OS.md).
-// Version v1 volontairement discrète : le lecteur en pause et une note ouverte,
-// posés en périphérie. Le bureau reste immédiatement lisible.
+// Version v1 volontairement discrète : l'Émetteur en veille côté ATELIER et une
+// note ouverte, posés en périphérie. Le bureau reste immédiatement lisible.
 
 import { openWindow } from '../os/wm.svelte.js';
-import { player } from '../os/player.svelte.js';
 
 export function restoreSession() {
   const vw = typeof window !== 'undefined' ? window.innerWidth : 1200;
   const vh = typeof window !== 'undefined' ? window.innerHeight : 800;
 
-  // Le lecteur, en pause, discret en bas à droite.
-  player.trackId = 'demo3';
-  player.queue = ['demo3'];
-  player.qIndex = 0;
-  player.playing = false;
-  player.autoplay = false;
-  player.caption = 'laissé en pause hier, 02:17';
+  // L'Émetteur, ouvert, au repos côté ATELIER (D13 : il était là avant nous).
   openWindow({
-    appId: 'player', key: 'player', title: '♪ lecteur',
-    x: Math.max(340, vw - 360), y: Math.max(200, vh - 300), w: 310, h: 170,
+    appId: 'emetteur', key: 'emetteur', title: '⌁ émetteur',
+    x: Math.max(340, vw - 460), y: Math.max(160, vh - 420), w: 408, h: 296,
   });
 
   // Une note restée ouverte, en retrait.

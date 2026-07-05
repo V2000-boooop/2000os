@@ -1,15 +1,34 @@
-/* Vincent 2000 OS — style v1 volontairement neutre.
-   Le langage visuel définitif viendra avec 070_VISUAL_LANGUAGE.
+/* Vincent 2000 OS — style v1.
+   Langage visuel : docs/070_VISUAL_LANGUAGE.md.
    Règle : le bureau est calme, les interactions sont exubérantes. */
 
 :root {
+  /* ================================================================
+     PALETTE DA — les 9 couleurs de 070_VISUAL_LANGUAGE.md (§4).
+     Tokens globaux, réutilisables partout (cascade dans les styles
+     scoped Svelte). Chaque destination puise ici plutôt que de
+     redéclarer ses couleurs. Valeurs = les couleurs signature déjà
+     en place (recâblage sans changement visuel).
+     ================================================================ */
+  --v2000-gris-bureau:  #dddcd4; /* gris Windows 2000 (chrome, panneaux) */
+  --v2000-bleu-bureau:  #24596e; /* bleu bureau PC ancien (fané, écran) */
+  --v2000-vert-pmu:     #4ad0a0; /* vert PMU / bar / néon fatigué */
+  --v2000-rouge-nuit:   #ff3140; /* rouge orangé lumière de nuit (néon La Ride) */
+  --v2000-jaune-sodium: #ffb24a; /* jaune lampe sodium (ambre Night Drive) */
+  --v2000-noir-nuit:    #0a0e1a; /* noir bleuté nocturne */
+  --v2000-violet-rave:  #b06bff; /* violet club / rave (arcade) */
+  --v2000-blanc-papier: #f4f3ec; /* blanc cassé papier ancien */
+  --v2000-brun-tabac:   #241a0c; /* brun tabac / carton / cuir usé */
+
+  /* ---- neutres du bureau (sémantiques) : routés sur les tokens DA
+     quand la valeur correspond, sinon nuances propres au bureau ---- */
   --ink: #23231f;
   --mid: #7a7a72;
   --line: #9a9a90;
   --desk: #e9e8e2;
-  --panel: #dddcd4;
+  --panel: var(--v2000-gris-bureau); /* était #dddcd4 */
   --win: #fbfbf8;
-  --paper: #f4f3ec;
+  --paper: var(--v2000-blanc-papier); /* était #f4f3ec */
   --sel: #c9c8be;
 }
 

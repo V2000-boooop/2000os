@@ -24,6 +24,7 @@ Chaque entité du bureau déclare son **destin nocturne** dans un registre centr
 | 📁 Jeux | une salle d'arcade entrevue |
 | 📁 Notes | un lampadaire (les idées éclairent la route) |
 | 🌐 Internet | l'antenne radio sur la colline, led rouge clignotante |
+| ★ Favoris | des panneaux publicitaires (teasers de vraies pièces) |
 | 🗑 Corbeille | une casse auto au loin |
 | Fenêtre lecteur | se glisse dans l'autoradio (l'écoute en cours continue en voiture) |
 | Autres fenêtres | se replient dans la boîte à gants |

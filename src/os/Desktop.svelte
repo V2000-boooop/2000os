@@ -7,8 +7,16 @@
   import { desktopItems, byId, searchIndex } from '../data/content.js';
   import { openItem } from './open.js';
   import { restoreSession } from '../data/session.js';
-  import { sound, initSoundOnGesture, toggleSound } from './sound.svelte.js';
+  import { sound, play, initSoundOnGesture, toggleSound } from './sound.svelte.js';
   import Window from './Window.svelte';
+  import { night, enterNight } from './nightdrive/night.svelte.js';
+  import NightDrive from './nightdrive/NightDrive.svelte';
+
+  // Chorégraphie Night Drive : le bureau reste monté du début à la fin — il
+  // s'efface et revient, mais son état (fenêtres, écoute, sélection) ne bouge pas.
+  const ndAway = $derived(['migration', 'cabin', 'ignition'].includes(night.phase));
+  const ndUnder = $derived(night.phase === 'drive' || night.phase === 'return-cabin');
+  const ndBack = $derived(night.phase === 'return-dawn');
 
   let selected = $state(null);
   let query = $state('');
@@ -53,14 +61,20 @@
   }
 </script>
 
-<main class="desk" onpointerdown={() => (selected = null)}>
+<main class="desk" class:away={ndAway} class:under={ndUnder} class:back={ndBack} onpointerdown={() => (selected = null)}>
   <!-- icônes : catégories naturelles (niveau 1) -->
   <div class="icons">
-    {#each desktopItems as it (it.id)}
+    {#each desktopItems as it, i (it.id)}
       <button
         class="dicon"
+        style="--i:{i}"
         class:sel={selected === it.id}
-        onpointerdown={(e) => { e.stopPropagation(); selected = it.id; }}
+        onpointerdown={(e) => {
+          e.stopPropagation();
+          // Du toucher, pas de l'action : select ne sonne qu'au changement de sélection.
+          if (selected !== it.id) play('select');
+          selected = it.id;
+        }}
         ondblclick={() => openItem(byId[it.id])}
       >
         <span class="glyph">{it.glyph}</span>
@@ -76,6 +90,19 @@
       <App {...win.props} />
     </Window>
   {/each}
+
+  <!-- NIGHT DRIVE — la porte vers la première Destination (D12).
+       Icône d'app discrète façon écran d'accueil : elle s'allume quand la nuit est active. -->
+  <button
+    class="nightkey"
+    class:on={night.phase !== 'off'}
+    onclick={enterNight}
+    disabled={night.busy || night.phase !== 'off'}
+    title="night mode"
+  >
+    <span class="nk-icon">☾</span>
+    <span class="nk-label">night mode</span>
+  </button>
 
   <!-- résultats de recherche -->
   {#if matches.length > 0}
@@ -111,6 +138,9 @@
     </button>
     <span class="clock">{clock}</span>
   </footer>
+
+  <!-- la Destination — montée par-dessus le bureau, jamais à sa place -->
+  <NightDrive />
 </main>
 
 <style>
@@ -244,4 +274,108 @@
     color: var(--mid);
     user-select: none;
   }
+
+  /* ---- NIGHT DRIVE : la porte — icône d'app, discrète ---- */
+  .nightkey {
+    position: absolute;
+    right: 20px;
+    bottom: 52px;
+    z-index: 2;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    padding: 4px;
+    background: transparent;
+    border: none;
+    transition: transform 120ms ease;
+  }
+  .nk-icon {
+    display: grid;
+    place-items: center;
+    width: 46px;
+    height: 46px;
+    font-size: 20px;
+    color: #ffe8b0;
+    text-shadow: 0 0 8px rgba(255, 232, 176, 0.55);
+    background: linear-gradient(160deg, #162040 0%, #0c1226 55%, #070c1b 100%);
+    border: 1px solid rgba(63, 227, 255, 0.32);
+    border-radius: 11px;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.07);
+    transition: border-color 200ms ease, box-shadow 200ms ease;
+  }
+  .nk-label {
+    font-size: 9px;
+    letter-spacing: 0.13em;
+    color: var(--mid);
+  }
+  .nightkey:hover:not(:disabled) { transform: translateY(-2px); }
+  .nightkey:hover:not(:disabled) .nk-icon {
+    border-color: rgba(63, 227, 255, 0.8);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.07), 0 0 12px rgba(63, 227, 255, 0.3);
+  }
+  .nightkey:active:not(:disabled) { transform: scale(0.93); }
+  /* activée : l'icône reste allumée, comme une app en marche */
+  .nightkey.on .nk-icon {
+    border-color: rgba(63, 227, 255, 0.95);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.07), 0 0 16px rgba(63, 227, 255, 0.55);
+  }
+  /* pendant la métamorphose elle reste visible : c'est la chorégraphie qui l'emmène */
+  .nightkey:disabled { pointer-events: none; }
+
+  /* ---- NIGHT DRIVE : chorégraphie du bureau ----
+     Rien n'apparaît, tout se transforme : chaque élément part VERS la ville
+     (point de fuite haut-droit) et en revient. Le bureau n'est jamais démonté. */
+  .desk.away .dicon,
+  .desk.away .nightkey {
+    animation: nd-flyout 850ms cubic-bezier(0.5, -0.1, 0.8, 0.5) forwards;
+    animation-delay: calc(var(--i, 0) * 130ms);
+    pointer-events: none;
+  }
+  @keyframes nd-flyout {
+    28% { transform: translate(7px, -5px) scale(1.05); opacity: 1; }
+    100% { transform: translate(40vw, -16vh) scale(0.06) rotate(9deg); opacity: 0; }
+  }
+  .desk.away :global(.win) {
+    animation: nd-fold 720ms cubic-bezier(0.55, 0, 0.7, 0.4) 320ms forwards;
+    pointer-events: none;
+  }
+  /* les fenêtres se replient vers le bas : la boîte à gants est en dessous */
+  @keyframes nd-fold {
+    22% { transform: scale(1.02); opacity: 1; }
+    100% { transform: translateY(42vh) scale(0.05); opacity: 0; }
+  }
+  .desk.away .taskbar {
+    animation: nd-sink 620ms ease-in 1500ms forwards;
+  }
+  /* la barre des tâches plonge — le tableau de bord montera du même bord */
+  @keyframes nd-sink { to { transform: translateY(120%); } }
+  .desk.away .results { display: none; }
+
+  /* nuit pleine : le bureau attend, invisible, intact (l'audio continue) */
+  .desk.under .icons,
+  .desk.under .nightkey,
+  .desk.under :global(.win),
+  .desk.under .taskbar,
+  .desk.under .results { visibility: hidden; }
+
+  /* le retour : chaque chose reprend exactement sa place */
+  .desk.back .dicon,
+  .desk.back .nightkey {
+    animation: nd-flyin 780ms cubic-bezier(0.2, 0.6, 0.3, 1) backwards;
+    animation-delay: calc(var(--i, 0) * 110ms);
+  }
+  @keyframes nd-flyin {
+    from { transform: translate(40vw, -16vh) scale(0.06) rotate(9deg); opacity: 0; }
+  }
+  .desk.back :global(.win) {
+    animation: nd-unfold 680ms cubic-bezier(0.2, 0.6, 0.3, 1) 320ms backwards;
+  }
+  @keyframes nd-unfold {
+    from { transform: translateY(42vh) scale(0.05); opacity: 0; }
+  }
+  .desk.back .taskbar {
+    animation: nd-rise 520ms ease-out backwards;
+  }
+  @keyframes nd-rise { from { transform: translateY(120%); } }
 </style>

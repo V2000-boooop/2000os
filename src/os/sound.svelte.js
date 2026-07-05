@@ -58,15 +58,11 @@ export function initSoundOnGesture() {
   if (ctx.state === 'suspended') ctx.resume().catch(() => {});
 }
 
-/** Joue un son d'interface (ou son fallback si le fichier n'existe pas encore). */
+/** Joue un son d'interface. */
 export function play(name) {
   if (!sound.enabled || !ctx) return;
-  let def = soundMap[name];
-  let buf = buffers[name];
-  if (!buf && def?.fallback) {
-    buf = buffers[def.fallback];
-    def = soundMap[def.fallback];
-  }
+  const def = soundMap[name];
+  const buf = buffers[name];
   if (!def || !buf) return;
   const src = ctx.createBufferSource();
   src.buffer = buf;

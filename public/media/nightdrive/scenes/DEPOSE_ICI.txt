@@ -1,0 +1,14 @@
+LES INTÉRIEURS (scènes gigognes D15) — dépose ici tes paires off/on.
+
+Noms attendus (cadrage strictement identique dans chaque paire,
+objets interactifs identifiables par leur lumière dans la version on) :
+
+  taverne_off_v1.png     + taverne_on_v1.png      (→ Sons)
+  laride_off_v1.png      + laride_on_v1.png       (→ Jeux / bornes)
+  barque_off_v1.png      + barque_on_v1.png       (→ à définir)
+  cathedrale_off_v1.png  + cathedrale_on_v1.png   (→ à définir)
+  pmu_off_v1.png         + pmu_on_v1.png          (→ dossier libre)
+
+Dès qu'une paire est déposée, sa porte s'ouvre toute seule dans la ville
+(zoom-crossfade). Sans images, le lieu reste une lueur. Une scène testée
+par itération — je mesure les zones cliquables à réception.
