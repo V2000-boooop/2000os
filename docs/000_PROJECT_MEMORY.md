@@ -13,6 +13,9 @@
 - `000` reste ≤ 3 pages : toute livraison passée est compressée en une ligne ; le détail vit dans `090` et les docs systèmes.
 - **QC anti-boucle (`015_QC_PROTOCOLE.md`) — obligatoire.** Rien n'est « OK » sans : assets **relus/validés** (un fichier corrompu = on refait), `npm run build` vert, et **test LIVE headless** (`tools/smoke_test.mjs` : les frames défilent ET se décodent, 0 erreur console). Le lanceur est **auto-frais** (tue le port 4321 + vide `.vite`) → après un changement, Vincent **relance** le lanceur, un simple refresh ne suffit pas.
 
+- **Démarrage — tout reconnecter (obligatoire).** Avant d'agir, lire la chaîne de contexte complète : `000_PROJECT_MEMORY.md` → `NOTES_PROCHAINE_SESSION.md` → les docs système concernés (`060_SCENES.md` pour les scènes, `050_SON.md`, etc.). On repart toujours du contexte relié, jamais à froid.
+- **Fin de session — réflexe (obligatoire).** Toujours, avant de conclure : (1) **optimiser** le projet (poids des assets, `npm run build` vert, nettoyage des fichiers morts) ; (2) **compacter** (mettre à jour `000` + `NOTES_PROCHAINE_SESSION.md` — une ligne par livraison, détail dans `090`) ; (3) **pousser en ligne**.
+
 ## Le projet en trois phrases
 
 Vincent 2000 OS est l'**atelier numérique vivant** de Vincent 2000, identité artistique réelle d'un DJ, compositeur et sound designer. Il rend accessible sa matière créative (musiques, recherches sonores et visuelles, notes, archives, projets, jeux) à travers une interface immersive inspirée d'un ordinateur personnel 1998–2003 — **interprétation personnelle**, pas reconstitution. La frontière réel/mise en scène est volontairement floue.
