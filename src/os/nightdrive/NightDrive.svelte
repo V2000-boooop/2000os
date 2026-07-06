@@ -30,6 +30,11 @@
   import { FRINGUES } from './friperie.js';
   import { createUnivers } from './univers.js';
   import { porte, ressortir, zoneSfx, setAmbiance, duckAmbiance, loop } from './worldsound.js';
+  // [DEMO PMU reactsound] couche Web Audio optionnelle, branchée UNIQUEMENT sur le PMU
+  // (clics vivants + crossfade ambiance + ducking). Retirer ce bloc + les 5 hooks
+  // marqués [DEMO PMU reactsound] pour revenir à l'état d'avant. worldsound.js intact.
+  import { hit as rsHit, bed as rsBed, duck as rsDuck } from './reactsound.js';
+  const rsPan = (z) => Math.max(-1, Math.min(1, ((((z?.x ?? 50) + (z?.w ?? 0) / 2) / 100) * 2 - 1))) * 0.7;
 
   const p = $derived(night.phase);
   const worldOn = $derived(['cabin', 'ignition', 'drive', 'return-cabin'].includes(p));
@@ -61,6 +66,8 @@
   let lookX = $state(0);
   let lookY = $state(0);
   let hovering = $state(false);
+  let hoverOx = $state(50); // centre % du lieu survolé = origine du zoom-cadrage
+  let hoverOy = $state(50);
   let lastPt = null; // dernière position curseur (coordonnées canvas)
 
   function focusAt(hot) {
@@ -275,6 +282,8 @@
     // le regard se tourne vers le lieu (même doctrine qu'It7, cible en %)
     lookX = Math.max(-1, Math.min(1, (l.x + l.w / 2 - 50) / 38));
     lookY = Math.max(-1, Math.min(1, (l.y + l.h / 2 - 50) / 42));
+    hoverOx = l.x + l.w / 2; // le zoom se cadre sur le centre du lieu
+    hoverOy = l.y + l.h / 2;
     hovering = true;
   }
   function lieuLeave() {
@@ -282,6 +291,12 @@
     lookY = 0;
     hovering = false;
   }
+  // zoom-cadrage à L'INTÉRIEUR des scènes (même sensation que l'habitacle) : ne
+  // s'applique qu'à la scène du dessus, jamais aux scènes en plongée.
+  let zHovering = $state(false), zHoverOx = $state(50), zHoverOy = $state(50);
+  function zoomEnter(z) { zHoverOx = z.x + z.w / 2; zHoverOy = z.y + z.h / 2; zHovering = true; }
+  function zoomLeave() { zHovering = false; }
+  $effect(() => { sceneTop; zHovering = false; }); // changer de scène relâche le zoom
   // ---- la voix du comptoir : la borne PMU génère un mantra de zinc ----
   let mantra = $state(null);
   let mantraT = null;
@@ -710,11 +725,17 @@
     if (type === 'internet') netStart();
     if (type === 'pourboire') merci = null;
     room = type;
-    if (z) zoneSfx(sceneTop, z.id);
+    if (z) {
+      // [DEMO PMU reactsound] clic vivant (pitch/pan variables) sur le PMU, sinon one-shot HTML classique
+      if (sceneTop === 'pmu') rsHit(`zone_pmu_${z.id}`, { pan: rsPan(z) });
+      else zoneSfx(sceneTop, z.id);
+    }
+    if (sceneTop === 'pmu') rsDuck(true); // [DEMO PMU reactsound] une destination s'ouvre → l'ambiance se fait petite
   }
   function closeRoom() {
     if (room === 'internet') netStop();
     room = null;
+    rsDuck(false); // [DEMO PMU reactsound] destination fermée → l'ambiance revient
   }
   function closeUnivers() { univers = null; }
 
@@ -737,12 +758,17 @@
 
   // ---- LE LIT D'AMBIANCE : la boucle de la scène courante, duckée par
   //      l'antenne ou par une expérience plein cadre (D13) ----
-  $effect(() => { setAmbiance(worldOn ? sceneTop : null); });
+  $effect(() => {
+    const s = worldOn ? sceneTop : null;
+    // [DEMO PMU reactsound] le PMU passe par le crossfade Web Audio ; tout le reste reste sur worldsound
+    if (s === 'pmu') { setAmbiance(null); rsBed('ambiance_pmu'); }
+    else { rsBed(null); rsDuck(false); setAmbiance(s); }
+  });
   $effect(() => {
     const fullscreen = !!univers || cielOpen || room === 'confess';
     duckAmbiance(player.playing || fullscreen);
   });
-  $effect(() => () => setAmbiance(null)); // démontage de la Destination : silence
+  $effect(() => () => { setAmbiance(null); rsBed(null); }); // démontage de la Destination : silence ([DEMO PMU reactsound] coupe aussi le bed Web Audio)
 
   // ---- PERSO VIVANTS : jeux de poses + réactions contextuelles --------------
   // chaque perso peut porter `poses: { idle, radio, roll, … }`. personaPose[id]
@@ -820,6 +846,45 @@
     playPose(perso.id, 'blow', { fps: 3, then: 'smoke' });
     keepSmoking(perso.id);
   }
+  // ============ [PRÊTRE] perso vivant à humeur (cathédrale) — 060 §2 ============
+  let priestMood = $state(null);    // null | 'joyeux' | 'vener' (mémorisé)
+  let priestPose = $state('idle');  // idle | demande | sermon_joyeux | sermon_vener
+  let coinAsk = $state(false);      // dialogue « une pièce ? »
+  let sermonOn = $state(false);     // sermon en cours → affiche les halos d'humeur
+  let sermonTimer;
+  const priest = $derived(sceneTop === 'cathedrale' ? SCENES.cathedrale?.priest : null);
+
+  // il vient demander la pièce de temps en temps (4e mur)
+  $effect(() => {
+    if (sceneTop !== 'cathedrale' || !priest || p !== 'drive') return;
+    let t;
+    const [a, b] = priest.askAfter ?? [18, 40];
+    const schedule = () => {
+      t = setTimeout(() => {
+        if (!coinAsk && !sermonOn) { priestPose = 'demande'; coinAsk = true; playSfx('/media/nightdrive/sons/pretre_demande.wav'); }
+        schedule();
+      }, (a + Math.random() * (b - a)) * 1000);
+    };
+    schedule();
+    return () => { clearTimeout(t); clearTimeout(sermonTimer); priestPose = 'idle'; coinAsk = false; sermonOn = false; };
+  });
+
+  function giveCoin(yes) {
+    coinAsk = false;
+    priestMood = yes ? 'joyeux' : 'vener';
+    priestPose = 'idle';
+    playSfx(`/media/nightdrive/sons/${yes ? 'piece' : 'refus'}.wav`);
+  }
+  function playSermon() {
+    const mood = priestMood ?? 'joyeux';   // défaut joyeux tant qu'il n'a pas quémandé
+    priestPose = `sermon_${mood}`;
+    sermonOn = true;
+    playSfx(`/media/nightdrive/sons/sermon_${mood}.wav`);
+    clearTimeout(sermonTimer);
+    sermonTimer = setTimeout(() => { sermonOn = false; priestPose = 'idle'; }, 6000);
+  }
+  const hideImg = (e) => { e.currentTarget.style.visibility = 'hidden'; };
+
   // la radio joue → les perso qui ont une pose 'radio' s'y mettent (sauf s'ils roulent)
   $effect(() => {
     const playing = player.playing;
@@ -857,13 +922,31 @@
     }
   });
 
+  // [COLLAGE] états d'objets peints : map "scène:overlayId" -> état courant.
+  // Le calque affiché vient de scenes.js (overlays[].states). off = aucun calque.
+  let overlayState = $state({});
+  function overlaySrc(sceneId, ov) {
+    return ov.states[overlayState[`${sceneId}:${ov.id}`] ?? ov.initial];
+  }
+  function toggleOverlay(sceneId, ov) {
+    const keys = Object.keys(ov.states);
+    const key = `${sceneId}:${ov.id}`;
+    const cur = overlayState[key] ?? ov.initial;
+    overlayState = { ...overlayState, [key]: keys[(keys.indexOf(cur) + 1) % keys.length] };
+  }
+
   // une zone, ses destins : sortie → goto (si les images sont là) → open → lueur
   function zoneClick(z) {
     if (p !== 'drive') return;
+    // [COLLAGE] un objet à états lié à cette zone → on bascule son calque peint
+    const ov = (SCENES[sceneTop]?.overlays ?? []).find((o) => o.zone === z.id);
+    if (ov) toggleOverlay(sceneTop, ov);
+    // [PRÊTRE] le pupitre → sermon selon l'humeur mémorisée (le halo suit)
+    if (sceneTop === 'cathedrale' && priest && z.id === priest.sermonZone) playSermon();
     if (z.exit) { popScene(); return; }
     if (z.goto && sceneReady[z.goto]) { pushScene(z); return; }
     if (z.open?.type === 'arcade') { arcadeOpen = true; return; }
-    if (z.open?.type === 'mantra') { sayMantra(); zoneSfx('pmu', 'terminal'); return; }
+    if (z.open?.type === 'mantra') { sayMantra(); if (sceneTop === 'pmu') rsHit('zone_pmu_terminal', { pan: rsPan(z) }); else zoneSfx('pmu', 'terminal'); return; } // [DEMO PMU reactsound]
     if (z.open?.type === 'cocktails') { cocktail = COCKTAILS[0]; carteOpen = true; return; }
     if (z.open?.type === 'dj') { djOpen = true; return; }
     if (z.open?.type === 'carnet') { carnet = z.open.id; return; }
@@ -884,7 +967,10 @@
   const pcStyle = $derived(
     inScene
       ? `transform-origin:${stack[0].ox ?? 50}% ${stack[0].oy ?? 50}%; transform: scale(2.3);`
-      : `transform: translate(${(-lookX * 9).toFixed(1)}px, ${(-lookY * 4).toFixed(1)}px);`
+      : `transform-origin:${hoverOx}% ${hoverOy}%;
+         transition: transform ${hovering ? 7000 : 800}ms ${hovering ? 'cubic-bezier(.42,.03,.62,.2)' : 'ease-out'} ${hovering ? 380 : 0}ms, filter ${hovering ? 7000 : 800}ms ease-out ${hovering ? 380 : 0}ms;
+         transform: translate(${hovering ? '0px, 0px' : `${(-lookX * 9).toFixed(1)}px, ${(-lookY * 4).toFixed(1)}px`}) scale(${hovering ? 1.17 : 1});
+         filter: brightness(${hovering ? 1.04 : 1});`
   );
 
   function onKey(e) {
@@ -998,11 +1084,22 @@
           {@const below = i < stack.length - 2}
           <div
             class="sc"
-            style="transform-origin:{s.ox ?? 50}% {s.oy ?? 50}%; transform: scale({below ? 2.3 : 1});"
+            style="transform-origin:{below ? `${s.ox ?? 50}% ${s.oy ?? 50}%` : `${zHoverOx}% ${zHoverOy}%`}; {below ? '' : `transition: transform ${zHovering ? 7000 : 800}ms ${zHovering ? 'cubic-bezier(.42,.03,.62,.2)' : 'ease-out'} ${zHovering ? 380 : 0}ms, filter ${zHovering ? 7000 : 800}ms ease-out ${zHovering ? 380 : 0}ms; filter: brightness(${zHovering ? 1.04 : 1});`} transform: scale({below ? 2.3 : zHovering ? 1.17 : 1});"
             transition:arrive
           >
             <img class="pc-off" src={sc.off} alt="" draggable="false" />
             <img class="pc-breath" src={sc.on} alt="" draggable="false" />
+            <!-- [COLLAGE] calques d'état des objets (peints, transparents, plein cadre) :
+                 au-dessus du fond, sous les perso. off = aucun calque. -->
+            {#if sc.overlays}
+              {#each sc.overlays as ov (ov.id)}
+                {#if overlaySrc(s.id, ov)}
+                  <img class="overlay-layer" class:overlay-pos={ov.x != null} src={overlaySrc(s.id, ov)} alt="" draggable="false"
+                       style={ov.x != null ? `left:${ov.x}%; top:${ov.y}%; width:${ov.w}%; height:${ov.h}%;` : ''}
+                       transition:fade={{ duration: 260 }} />
+                {/if}
+              {/each}
+            {/if}
             <!-- CALQUE EAU : shimmer animé clipé sur la bande d'eau (au-dessus du
                  fond, sous les perso). Fait « trembler » les reflets peints. -->
             {#if sc.water}
@@ -1057,6 +1154,21 @@
                 <img class="fg-layer" src={fg.src} alt="" draggable="false" style="left:{fg.x}%; top:{fg.y}%; width:{fg.w}%; height:{fg.h}%;" />
               {/each}
             {/if}
+            <!-- [PRÊTRE] halos d'humeur (peints) pendant le sermon + le prêtre vivant.
+                 Safe-absent : les images manquantes se cachent (onerror), la logique tourne. -->
+            {#if s.id === 'cathedrale' && sc.priest}
+              {#if sermonOn && priestMood}
+                {#each (sc.priest.halos[priestMood] ?? []) as h (h)}
+                  <img class="overlay-layer" src={h} alt="" draggable="false" onerror={hideImg} transition:fade={{ duration: 400 }} />
+                {/each}
+              {/if}
+              {#key priestPose}
+                <img class="pretre" class:pretre-demande={priestPose === 'demande'}
+                     src={sc.priest.poses[priestPose] ?? sc.priest.poses.idle}
+                     style="left:{sc.priest.x}%; top:{sc.priest.y}%; width:{sc.priest.w}%; height:{sc.priest.h}%;"
+                     alt="" draggable="false" onerror={hideImg} transition:fade={{ duration: 300 }} />
+              {/key}
+            {/if}
             <!-- LE SEUIL d'abord dans le DOM : les zones passent au-dessus -->
             <button class="exit" onclick={popScene} title="ressortir (Échap)">
               <span class="exit-lab">▾ ressortir</span>
@@ -1079,6 +1191,8 @@
                             background-size:${(10000 / z.w).toFixed(2)}% ${(10000 / z.h).toFixed(2)}%;
                             background-position:${((z.x / (100 - z.w)) * 100).toFixed(2)}% ${((z.y / (100 - z.h)) * 100).toFixed(2)}%;`}"
                 onclick={() => zoneClick(z)}
+                onpointerenter={() => zoomEnter(z)}
+                onpointerleave={zoomLeave}
                 aria-label={z.id}
               ></button>
             {/each}
@@ -1138,6 +1252,20 @@
                 <button onclick={() => rollJoint('stick')}>Stick</button>
               </div>
               <button class="roll-no" onclick={() => (rollAsk = false)}>laisser le sachet</button>
+            </div>
+          </div>
+        {/if}
+
+        <!-- ============ UNE PIÈCE ? (le prêtre de la cathédrale, 4e mur) ============ -->
+        {#if coinAsk}
+          <div class="roll-ask" role="dialog" aria-label="donner une pièce">
+            <div class="roll-card">
+              <span class="roll-q">Une petite pièce&nbsp;?</span>
+              <span class="roll-sub">pour l'artiste…</span>
+              <div class="roll-choices">
+                <button onclick={() => giveCoin(true)}>Donner</button>
+                <button onclick={() => giveCoin(false)}>Refuser</button>
+              </div>
             </div>
           </div>
         {/if}
@@ -1919,6 +2047,31 @@
     height: 100%;
     user-select: none;
   }
+  /* [COLLAGE] calque d'état d'objet : peint, transparent, plein cadre, au-dessus
+     du fond et sous les perso. Aucune lumière CSS — c'est l'image qui porte l'état. */
+  .overlay-layer {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    user-select: none;
+    object-fit: contain;
+  }
+  /* calque positionné (juste l'objet peint, placé en %) plutôt que plein cadre */
+  .overlay-layer.overlay-pos { inset: auto; }
+  /* [PRÊTRE] perso positionné, sous les zones ; « demande » = il avance vers l'écran */
+  .pretre {
+    position: absolute;
+    pointer-events: none;
+    user-select: none;
+    object-fit: contain;
+    object-position: bottom center;
+    transform-origin: bottom center;
+    transition: transform 550ms cubic-bezier(.2,.7,.2,1), filter 550ms;
+  }
+  .pretre-demande { transform: scale(1.18) translateY(3%); filter: drop-shadow(0 6px 18px #000a); }
+  @media (prefers-reduced-motion: reduce) { .pretre { transition: none; } }
   /* les instruments vivants en mode peint : positions en % de la scène v2
      (quai) — mêmes classes m-*, seules les coordonnées changent */
   .iv { position: absolute; inset: 0; pointer-events: none; }

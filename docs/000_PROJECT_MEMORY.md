@@ -2,7 +2,7 @@
 
 > **Document de référence courant. À relire avant chaque nouvelle tâche. Max 3 pages.**
 > Détail et historique des décisions : `090_DECISION_LOG.md`.
-> Dernière révision : 2026-07-04 (It26 — grande passe de branchement)
+> Dernière révision : 2026-07-06 (méthode de scène universelle — collage vivant + mode 3D : `060_SCENES.md`)
 
 ## Protocole de session (économie de tokens — strict)
 
@@ -47,6 +47,7 @@ Chaque interaction doit **faciliter la découverte du travail** ou **enrichir l'
 | D13 | **Le lecteur est un émetteur** (`V2000 TX`, filiation radio pirate). Un seul flux, deux états : **émission** (vie continue) / **prise d'antenne** (retour naturel au flux à la fin). Vocabulaire : émettre/capter/prendre l'antenne/éjecter, jamais play/playlist. Émission générative, jamais une boucle. |
 | D15 | **Scènes gigognes** : le monde peint est un arbre récursif (paire off/on + zones % ; zone = `goto` scène enfant, `open` contenu, ou lueur). Pile de navigation, Échap dépile. Spec : `exploration/nightdrive/scenes_gigognes.md`. |
 | D14 | **Le spectaculaire vit dans les Destinations, pas au bureau.** Le bureau reste calme/banal, le player un compagnon discret ; le changement de dimension arrive en quittant le bureau. Seul objet désirable du bureau : la porte vers la Destination. |
+| D16 | **Méthode de scène universelle (`060_SCENES.md`)** : tout est **collage peint** (Arcane×GTA), zéro lumière CSS. Calques détourés à états, **halos-calques + reflets** (vitraux/murs), accents en boucle, **humeur mémorisée** (prêtre : demande la pièce au 4e mur → sermon joyeux/vénère). Porte cachée : **manger un objet → bascule 3D** (three.js, piste 2.5D billboards). S'applique à toute scène. |
 
 ## Contraintes permanentes
 

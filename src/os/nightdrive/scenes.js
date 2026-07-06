@@ -128,6 +128,32 @@ export const SCENES = {
     // zones mesurées sur la paire (2026-07-04). Lumières d'abord : les
     // destinations (univers dark/angélique, discours, vocaux, pourboire)
     // seront branchées aux itérations suivantes — clic = lueur en attendant.
+    // [COLLAGE] objets à états : calques peints (PNG transparents, cadrage plein
+    // écran) qui se remplacent au clic sur la zone liée. off = aucun calque (la
+    // scène de base). Ajoute des états sans toucher au code.
+    overlays: [
+      { id: 'bougies', zone: 'bougies', initial: 'off', x: 82, y: 46, w: 18, h: 32, // placé sur les cierges (flammes vers le haut)
+        states: { off: null, on: `${S}/overlays/cathedrale_bougies_on.webp` } }, // cierges éteints → allumés
+    ],
+    // [PRÊTRE] perso vivant à humeur (060 §2) : idle → il vient demander la pièce au
+    // 4e mur → OUI = sermon joyeux (halo doré) / NON = sermon vénère (halo rouge).
+    // Safe-absent : rien ne s'affiche tant que les calques ne sont pas déposés, la
+    // logique tourne quand même (le dialogue « une pièce ? » marche déjà).
+    priest: {
+      x: 38, y: 30, w: 20, h: 56,   // position dans la nef (à recaler sur ton image)
+      sermonZone: 'pupitre',        // cliquer le pupitre = sermon selon l'humeur mémorisée
+      askAfter: [18, 40],           // secondes (aléatoire) avant qu'il vienne quémander
+      poses: {
+        idle:          `${S}/perso/pretre_idle.webp`,
+        demande:       `${S}/perso/pretre_demande.webp`,
+        sermon_joyeux: `${S}/perso/pretre_sermon_joyeux.webp`,
+        sermon_vener:  `${S}/perso/pretre_sermon_vener.webp`,
+      },
+      halos: {
+        joyeux: [`${S}/overlays/cathedrale_halo_joyeux.webp`, `${S}/overlays/cathedrale_reflet_vitraux_joyeux.webp`, `${S}/overlays/cathedrale_reflet_murs_joyeux.webp`],
+        vener:  [`${S}/overlays/cathedrale_halo_vener.webp`,  `${S}/overlays/cathedrale_reflet_vitraux_vener.webp`,  `${S}/overlays/cathedrale_reflet_murs_vener.webp`],
+      },
+    },
     zones: [
       { id: 'vitrail_dark',  x: 3,    y: 4,  w: 19,   h: 59, open: { type: 'univers', id: 'dark' }, lum: L('cathedrale_vitrail_dark') },  // vitrail démoniaque → univers dark psyché catholique + son
       { id: 'vitrail_ange',  x: 27.5, y: 7,  w: 12,   h: 47, open: { type: 'univers', id: 'ange' }, lum: L('cathedrale_vitrail_ange') },  // vitrail joyeux → même univers en angélique + son

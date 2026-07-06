@@ -1,0 +1,19 @@
+---
+// Galerie 3D — ouvre http://localhost:4321/test3d
+// Dépose tes .glb dans public/media/3d/, lance `node tools/scan_3d.mjs`, recharge.
+import Gallery3D from '../os/three/Gallery3D.svelte';
+---
+<html lang="fr">
+  <head><meta charset="utf-8" /><title>2000 OS — banque 3D</title>
+    <style>
+      body{margin:0;background:#05060d;color:#cbd2ff;font-family:monospace;padding:24px}
+      h1{margin:0 0 4px} p.sub{color:#8fa0ff;margin:0 0 20px}
+      code{color:#ffb24a}
+    </style>
+  </head>
+  <body>
+    <h1>2000 OS — banque 3D</h1>
+    <p class="sub">glisse tes <code>.glb</code> dans <code>public/media/3d/</code> → <code>node tools/scan_3d.mjs</code> → recharge · souris = tourner/zoomer</p>
+    <Gallery3D client:visible />
+  </body>
+</html>

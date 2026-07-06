@@ -1,0 +1,26 @@
+MAPPING SON PMU — Splice → 2000 OS
+===================================
+Les 6 samples ci-dessous sont DEJA debloques sur ton compte Splice (credits depenses).
+Recupere-les depuis l'app Splice (onglet "Sounds" > telecharges / ta bibliotheque),
+puis renomme-les EXACTEMENT comme la colonne "fichier a deposer" et depose-les ici
+(public/media/nightdrive/sons/). Ils remplacent les placeholders. Le code les prend
+automatiquement (contrat : le nom = le branchement).
+
+fichier a deposer        <-  sample Splice
+------------------------------------------------------------------
+ambiance_pmu.wav         <-  td_80_kit_atmosphere_loop_holdem_F#maj.wav   (lit d'ambiance)
+zone_pmu_ricard.wav      <-  FNF_CE_foley_bar_glass_clink_cheers.wav       (tchin de verre)
+zone_pmu_sudouest.wav    <-  ESM_GT_cinematic_fx_paper_turns_page_turn_foley.wav (journal)
+zone_pmu_terminal.wav    <-  ESM_BG_Cinematic_FX_confirmation_one_shot_digital_vintage_06.wav
+zone_pmu_tele.wav        <-  ESM_Oneshot_Alien_Game_UI_37_Glitchy_SciFi_Bleep_...wav
+zone_pmu_fdj.wav         <-  ESM_ASMR_Cinematic_FX_packaging_crush_crumble_gum_crisp_crinkle_02.wav
+
+Liens des pages Splice (pour les retrouver) :
+  glass clink : splice.com/sounds/sample/c736c859.../fnf-ce-foley-bar-glass-clink-cheers-wav
+  page turn   : splice.com/sounds/sample/ecedda71.../esm-gt-cinematic-fx-paper-turns-page-turn-foley-wav
+  terminal    : splice.com/sounds/sample/7907ba28.../esm-bg-cinematic-fx-confirmation-one-shot-digital-vintage-06-wav
+  tele bleep  : splice.com/sounds/sample/7087d4bd.../esm-oneshot-alien-game-ui-37-...
+  fdj crinkle : splice.com/sounds/sample/c313c2f6.../esm-asmr-...crinkle-02-wav
+  ambiance    : splice.com/sounds/sample/8d78af43.../td-80-kit-atmosphere-loop-holdem-f-maj-wav
+
+NB : formats .wav ou .mp3 acceptes. Supprime ce dossier = retour au silence total.

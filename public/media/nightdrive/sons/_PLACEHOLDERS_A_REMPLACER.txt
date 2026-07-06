@@ -1,0 +1,3 @@
+PLACEHOLDERS TEMPORAIRES (generes ffmpeg, sans copyright) pour tester reactsound sur le PMU.
+Remplace-les par tes vrais sons, ou supprime ce dossier pour revenir au silence.
+Noms attendus par le code : ambiance_pmu, zone_pmu_{fdj,tele,ricard,sudouest,terminal}
