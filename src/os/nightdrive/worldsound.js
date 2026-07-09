@@ -19,6 +19,9 @@ const BASE = '/media/nightdrive/sons';
 // murmure audible (avant : 0 absolu → « le son ne se lance pas », It36).
 const AMB_VOL = 0.32;
 const DUCK_VOL = 0.08;
+// Exceptions par scène : certains lieux doivent ENVELOPPER (extérieurs).
+// La barque = on est dehors, sur l'eau : l'ambiance porte la scène.
+const AMB_VOL_SCENE = { barque: 0.65 };
 
 // Un one-shot déjà constaté absent n'est plus re-tenté (évite de spammer des
 // 404 à chaque clic). Les boucles ne sont pas cachées (changements rares).
@@ -78,17 +81,19 @@ let amb = null;
 let ambScene = null;
 let ambDuck = false;
 
+const ambBase = () => AMB_VOL_SCENE[ambScene] ?? AMB_VOL;
+
 export function setAmbiance(scene) {
   if (scene === ambScene) return;
   amb?.stop();
   amb = null;
   ambScene = scene;
-  if (scene) amb = loop(`ambiance_${scene}`, ambDuck ? DUCK_VOL : AMB_VOL);
+  if (scene) amb = loop(`ambiance_${scene}`, ambDuck ? DUCK_VOL : ambBase());
 }
 
 /** L'antenne prend la parole → l'ambiance s'efface (et revient quand elle se tait). */
 export function duckAmbiance(on) {
   if (on === ambDuck) return;
   ambDuck = on;
-  amb?.setVol(on ? DUCK_VOL : AMB_VOL);
+  amb?.setVol(on ? DUCK_VOL : ambBase());
 }

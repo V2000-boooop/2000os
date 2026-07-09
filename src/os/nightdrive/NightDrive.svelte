@@ -618,27 +618,39 @@
     };
   });
 
-  // ---- LES CASSETTES de la boombox : une K7 = une playlist, à l'antenne ----
+  // ---- LES CASSETTES de la boombox : le son joue ICI, dans la barque ----
+  // (règle « son spatial cinéma », pas l'antenne : clic = lecture, re-clic = stop,
+  //  sortir de la barque = stop ; à la fin de la bande, la K7 s'arrête seule)
   let k7Open = $state(false);
-  // une piste : id de l'OS, ou fichier direct { nom, src } (enregistré au vol
-  // dans byId pour que l'Émetteur/autoradio sache le diffuser — même onde)
-  function k7Tracks(c) {
-    return c.pistes
-      .map((pi, i) => {
-        if (typeof pi === 'string') return byId[pi];
-        const id = `k7_${c.titre}_${i}`;
-        if (!byId[id]) byId[id] = { id, name: pi.nom, kind: 'audio', src: pi.src };
-        return byId[id];
-      })
-      .filter(Boolean);
+  let k7Cur = $state(null); // titre de la cassette en lecture, ou null
+  let k7Audio = null;
+  function k7Stop() {
+    k7Audio?.pause();
+    k7Audio = null;
+    k7Cur = null;
+    // la musique se tait → les danseurs s'arrêtent NET (timer compris), même si on
+    // vient de quitter la barque (l'effect ne voit plus ses persos, lui)
+    for (const id in personaPose) {
+      if (personaPose[id] === 'radio') { clearPose(id); setPose(id, undefined); setFrame(id, 0); }
+    }
   }
   function k7Play(c) {
-    const ts = k7Tracks(c);
-    if (!ts.length) return;
-    playTrack(ts[0], { list: ts, label: `K7 · ${c.titre}` });
+    if (k7Cur === c.titre) { k7Stop(); return; } // re-clic : on arrête la bande
+    k7Stop();
+    if (typeof Audio === 'undefined' || !c.src) return;
+    const a = new Audio(c.src);
+    a.volume = 0.9;
+    a.onended = () => { if (k7Audio === a) k7Stop(); };
+    a.onerror = () => { if (k7Audio === a) k7Stop(); }; // fichier absent : silence (050)
+    k7Audio = a;
+    k7Cur = c.titre;
+    a.play().catch(() => k7Stop());
   }
-  const k7OnAir = $derived(player.qLabel.startsWith('K7 · ') ? player.qLabel.slice(5) : null);
+  const k7OnAir = $derived(k7Cur);
+  // sortir de la barque (ou du monde) = la boombox se tait, la boîte se referme
   $effect(() => { if (p !== 'drive') { cielOpen = false; k7Open = false; } });
+  $effect(() => { if (sceneTop !== 'barque' && k7Cur) k7Stop(); });
+  $effect(() => () => k7Stop()); // démontage de la Destination
 
   // ============================================================
   //  LES NOUVELLES DESTINATIONS (branchées It26) — un dispatcher léger
@@ -1095,7 +1107,7 @@
   });
   $effect(() => {
     const fullscreen = !!univers || cielOpen || room === 'confess';
-    duckAmbiance(player.playing || fullscreen || sermonOn); // pendant le sermon, l'église se fait murmure
+    duckAmbiance(player.playing || fullscreen || sermonOn || !!k7Cur); // sermon ou boombox : le monde se fait murmure
   });
   $effect(() => () => { setAmbiance(null); rsBed(null); }); // démontage de la Destination : silence ([DEMO PMU reactsound] coupe aussi le bed Web Audio)
 
@@ -1426,13 +1438,20 @@
   });
   const hideImg = (e) => { e.currentTarget.style.visibility = 'hidden'; };
 
-  // la radio joue → les perso qui ont une pose 'radio' s'y mettent (sauf s'ils roulent)
+  // la boombox joue → les persos qui ont une pose 'radio' DANSENT (boucle de frames
+  // continue, ~7 fps). Ils ne s'y mettent que depuis le repos : jamais pendant qu'ils
+  // roulent/fument/lévitent (les états tenus restent sacrés). Stop musique = retour idle.
   $effect(() => {
-    const playing = player.playing;
+    const playing = !!k7Cur || player.playing;
     for (const per of (SCENES[sceneTop]?.personnages ?? [])) {
       if (!per.poses?.radio) continue;
-      if (playing && personaPose[per.id] !== 'roll') setPose(per.id, 'radio');
-      else if (!playing && personaPose[per.id] === 'radio') setPose(per.id, undefined);
+      const cur = personaPose[per.id];
+      if (playing && cur == null && !floatState[per.id] && !smoking[per.id]) {
+        startLoop(per.id, 'radio', 140);
+      } else if (!playing && cur === 'radio') {
+        clearPose(per.id);
+        setPose(per.id, undefined); setFrame(per.id, 0);
+      }
     }
   });
   // idle ALÉATOIRE : si un perso a plusieurs poses idle (`idlePoses`), il en change
@@ -2007,15 +2026,15 @@
                     <span class="k7-coque">
                       <span class="k7-label" style="background:{c.couleur}">{c.titre}</span>
                       <span class="k7-fen">
-                        <i class="k7-reel" class:spin={onair && player.playing}></i>
-                        <i class="k7-reel r2" class:spin={onair && player.playing}></i>
+                        <i class="k7-reel" class:spin={onair}></i>
+                        <i class="k7-reel r2" class:spin={onair}></i>
                       </span>
                     </span>
                     {#if c.note}<em class="k7-note">{c.note}</em>{/if}
                   </button>
                 {/each}
               </div>
-              <div class="k7-foot">UNE CASSETTE = UNE PRISE D'ANTENNE · Échap pour refermer</div>
+              <div class="k7-foot">CLIC = LECTURE · RE-CLIC = STOP · Échap pour refermer</div>
             </div>
           </div>
         {/if}

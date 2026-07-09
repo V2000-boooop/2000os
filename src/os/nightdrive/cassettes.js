@@ -1,26 +1,36 @@
 // LES CASSETTES DE LA BARQUE — la boombox X-BASS ouvre la boîte à K7.
-// Une cassette = une playlist. Choisir une cassette = prise d'antenne (D13) :
-// c'est le MÊME flux que l'Émetteur et l'autoradio, jamais un second lecteur.
+// Le son joue ICI, dans la barque (règle « son spatial cinéma ») :
+// clic = lecture, re-clic = stop, sortir de la barque = stop.
 //
 // Vincent : une entrée par cassette.
 //   titre    : écrit sur l'étiquette
 //   couleur  : la couleur de l'étiquette (hex)
 //   note     : griffonné en dessous (optionnel)
-//   pistes   : dans l'ordre — soit l'id d'un son de l'OS (src/data/content.js),
-//              soit { nom: 'TITRE', src: '/media/…' } pour un fichier direct
-//              (déposé dans public/media/, ex. public/media/k7/).
+//   src      : le fichier (déposé dans public/media/k7/)
 
 export const CASSETTES = [
   {
-    titre: 'FACE A — EXEMPLE',
+    titre: 'LUJON',
     couleur: '#e8a13a',
-    note: 'remplace-moi dans cassettes.js',
-    pistes: ['kick1', 'fr_hangar', 'fr_quai'],
+    note: 'face nuit',
+    src: '/media/k7/lujon.mp3',
   },
   {
-    titre: 'FACE B — EXEMPLE',
+    titre: 'INNER WAVE',
     couleur: '#3fa0e8',
-    note: 'démos du hangar',
-    pistes: ['demo3', 'basse1'],
+    note: 'radio barque',
+    src: '/media/k7/inner_wave.mp3',
+  },
+  {
+    titre: 'SCH DNB',
+    couleur: '#b03fe8',
+    note: '2000',
+    src: '/media/k7/sch_dnb.mp3',
+  },
+  {
+    titre: 'PINO2000',
+    couleur: '#3fe86e',
+    note: 'italo barque',
+    src: '/media/k7/pino2000.mp3',
   },
 ];
