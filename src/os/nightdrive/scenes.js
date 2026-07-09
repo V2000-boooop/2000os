@@ -27,6 +27,9 @@ const S = '/media/nightdrive/scenes';
 // nouvelle zone / nouvelle version d'images. Sans masque : fondu générique.
 const L = (n) => `${S}/lights/${n}.png`;
 
+// Frames du prêtre (tools/build_pretre_frames.py — canvas commun, ancre pieds)
+const PF = (b, n) => Array.from({ length: n }, (_, i) => `${S}/perso/pretre_${b}_${i + 1}.webp`);
+
 export const ROOT = 'quai';
 
 export const SCENES = {
@@ -205,14 +208,20 @@ export const SCENES = {
     // Safe-absent : rien ne s'affiche tant que les calques ne sont pas déposés, la
     // logique tourne quand même (le dialogue « une pièce ? » marche déjà).
     priest: {
-      x: 38, y: 30, w: 20, h: 56,   // position dans la nef (à recaler sur ton image)
+      x: 38, y: 30, w: 20, h: 56,   // position finale dans la nef (à recaler sur l'image)
+      enterFrom: 112,               // il ARRIVE du hors-champ droit (côté autel) en marchant
+      walkMs: 5200,                 // durée de la traversée
       sermonZone: 'pupitre',        // cliquer le pupitre = sermon selon l'humeur mémorisée
-      askAfter: [18, 40],           // secondes (aléatoire) avant qu'il vienne quémander
+      askAfter: [18, 40],           // secondes (aléatoire) avant son entrée + demande
       poses: {
-        idle:          `${S}/perso/pretre_idle.webp`,
-        demande:       `${S}/perso/pretre_demande.webp`,
-        sermon_joyeux: `${S}/perso/pretre_sermon_joyeux.webp`,
-        sermon_vener:  `${S}/perso/pretre_sermon_vener.webp`,
+        idle:          `${S}/perso/pretre_idle.webp`,        // état de base (planche refus, haut-gauche — acté Vincent)
+        marche:        [...PF('marche_a', 8), ...PF('marche_b', 8)], // cycle complet : 2 planches = 2 foulées (jambe G + D)
+        demande:       PF('demande', 8),                     // il quémande (boucle pendant la question)
+        don:           `${S}/perso/pretre_pose_12.webp`,     // bénédiction, main lumineuse (OUI)
+        refus:         PF('refus', 3),                       // il encaisse le NON (gueulante → main levée)
+        disparition:   PF('disparition', 4),                 // fumée violette → parti
+        sermon_joyeux: `${S}/perso/pretre_pose_9.webp`,      // bras ouverts
+        sermon_vener:  `${S}/perso/pretre_refus_1.webp`,     // la gueulante
       },
       halos: {
         joyeux: [`${S}/overlays/cathedrale_halo_joyeux.webp`, `${S}/overlays/cathedrale_reflet_vitraux_joyeux.webp`, `${S}/overlays/cathedrale_reflet_murs_joyeux.webp`],

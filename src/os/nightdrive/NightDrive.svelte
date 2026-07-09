@@ -624,6 +624,33 @@
   let k7Open = $state(false);
   let k7Cur = $state(null); // titre de la cassette en lecture, ou null
   let k7Audio = null;
+  // -- les sons de la radio elle-même (fichiers Vincent, public/media/k7/) --
+  let k7AB = 0;         // alternance des sons d'ouverture : radio_on / radio_ouvrir / radio_on…
+  let k7OpenSnd = null; // le son d'ouverture en cours (coupé si K7 lancée ou radio refermée)
+  let k7Bed = null;     // radio_mise_en_route : l'attente avant le choix (une fois, jamais relancé)
+  let k7LastPass = 0;
+  function k7Ui(name, vol = 0.9) {
+    if (typeof Audio === 'undefined') return null;
+    const a = new Audio(`/media/k7/${name}.mp3`);
+    a.volume = vol;
+    a.onerror = () => {}; // fichier absent : silence (050)
+    a.play().catch(() => {});
+    return a;
+  }
+  function k7Passby() { // survol radio/cassettes (throttle anti-mitraille)
+    const t = performance.now();
+    if (t - k7LastPass < 140) return;
+    k7LastPass = t;
+    k7Ui('radio_passby', 0.75);
+  }
+  function k7StopUi() { k7OpenSnd?.pause(); k7OpenSnd = null; k7Bed?.pause(); k7Bed = null; }
+  function k7OpenBox() { // clic sur la boombox : le son d'ouverture (a/b alterné) + l'attente
+    k7Open = true;
+    k7StopUi();
+    k7OpenSnd = k7Ui(k7AB % 2 ? 'radio_ouvrir' : 'radio_on');
+    k7AB++;
+    if (!k7Cur) k7Bed = k7Ui('radio_mise_en_route'); // rien si une K7 tourne déjà
+  }
   function k7Stop() {
     k7Audio?.pause();
     k7Audio = null;
@@ -635,6 +662,7 @@
     }
   }
   function k7Play(c) {
+    k7StopUi(); // choisir (ou arrêter) une K7 coupe le son d'ouverture et l'attente
     if (k7Cur === c.titre) { k7Stop(); return; } // re-clic : on arrête la bande
     k7Stop();
     if (typeof Audio === 'undefined' || !c.src) return;
@@ -649,8 +677,9 @@
   const k7OnAir = $derived(k7Cur);
   // sortir de la barque (ou du monde) = la boombox se tait, la boîte se referme
   $effect(() => { if (p !== 'drive') { cielOpen = false; k7Open = false; } });
+  $effect(() => { if (!k7Open) k7StopUi(); }); // radio refermée (✕, Échap, sortie) = ses sons se taisent
   $effect(() => { if (sceneTop !== 'barque' && k7Cur) k7Stop(); });
-  $effect(() => () => k7Stop()); // démontage de la Destination
+  $effect(() => () => { k7Stop(); k7StopUi(); }); // démontage de la Destination
 
   // ============================================================
   //  LES NOUVELLES DESTINATIONS (branchées It26) — un dispatcher léger
@@ -1356,39 +1385,94 @@
     }
   }
   // ============ [PRÊTRE] perso vivant à humeur (cathédrale) — 060 §2 ============
+  // It41 : le prêtre est ANIMÉ (planches de Vincent, tools/build_pretre_frames.py).
+  // L'église est VIDE à l'arrivée. Après le délai, il ENTRE en marchant depuis le
+  // hors-champ (côté autel), s'arrête à sa place, et quémande (anim en boucle +
+  // dialogue décalé pour ne pas le couvrir). OUI → bénédiction (main lumineuse) +
+  // sermon joyeux, il reste dans le décor. NON → il encaisse (gueulante) puis se
+  // DISSOUT en fumée violette — plus de prêtre jusqu'à la prochaine visite.
+  // UNE demande par visite (l'ancien harcèlement périodique est retiré).
   let priestMood = $state(null);    // null | 'joyeux' | 'vener' (mémorisé)
-  let priestPose = $state('idle');  // idle | demande | sermon_joyeux | sermon_vener
+  let priestPose = $state('idle');  // idle | marche | demande | don | refus | disparition | sermon_*
+  let priestFrame = $state(0);      // frame courante si la pose est une séquence
+  let priestOn = $state(false);     // présent dans la nef
+  let priestWalking = $state(false);
+  let priestX = $state(null);       // left % courant (null = position du bloc)
   let coinAsk = $state(false);      // dialogue « une pièce ? »
   let sermonOn = $state(false);     // sermon en cours → affiche les halos d'humeur
-  let sermonTimer;
+  let sermonTimer, priestSeq, priestHold, priestWalkT;
   const priest = $derived(sceneTop === 'cathedrale' ? SCENES.cathedrale?.priest : null);
 
-  // il vient demander la pièce de temps en temps (4e mur)
+  // pose → src (sprite unique OU séquence de frames, même contrat que resolvePose)
+  function priestSrc(P) {
+    const pose = P.poses?.[priestPose] ?? P.poses?.idle;
+    if (Array.isArray(pose)) return pose[Math.min(priestFrame, pose.length - 1)];
+    return pose;
+  }
+  // opts : { fps } · { loop } · { then } enchaîne à la fin · sinon retour idle après endHold
+  function playPriest(key, opts = {}) {
+    clearInterval(priestSeq); clearTimeout(priestHold);
+    priestPose = key; priestFrame = 0;
+    const pose = priest?.poses?.[key];
+    if (!Array.isArray(pose) || pose.length < 2) return;
+    const fps = opts.fps ?? 6;
+    let i = 0;
+    priestSeq = setInterval(() => {
+      i++;
+      if (i >= pose.length) {
+        if (opts.loop) { i = 0; priestFrame = 0; return; }
+        clearInterval(priestSeq);
+        priestFrame = pose.length - 1;
+        if (opts.then) opts.then();
+        else priestHold = setTimeout(() => { priestPose = 'idle'; priestFrame = 0; }, opts.endHold ?? 1400);
+      } else priestFrame = i;
+    }, 1000 / fps);
+  }
+
+  // l'entrée : hors-champ → sa place, en marchant (une fois par visite)
   $effect(() => {
     if (sceneTop !== 'cathedrale' || !priest || p !== 'drive') return;
-    let t;
+    priestOn = false; priestX = null; priestWalking = false; coinAsk = false;
     const [a, b] = priest.askAfter ?? [18, 40];
-    const schedule = () => {
-      t = setTimeout(() => {
-        if (!coinAsk && !sermonOn) { priestPose = 'demande'; coinAsk = true; playSfx('/media/nightdrive/sons/pretre_demande.wav'); }
-        schedule();
-      }, (a + Math.random() * (b - a)) * 1000);
+    const t = setTimeout(() => {
+      if (sermonOn) return;
+      priestOn = true; priestWalking = true;
+      priestX = priest.enterFrom ?? 112;
+      playPriest('marche', { fps: 8, loop: true });
+      // double rAF : l'img est posée hors-champ AVANT que la transition CSS parte
+      requestAnimationFrame(() => requestAnimationFrame(() => { priestX = priest.x; }));
+      priestWalkT = setTimeout(() => {
+        priestWalking = false; priestX = null;
+        playPriest('demande', { fps: 5, loop: true });
+        coinAsk = true;
+        playSfx('/media/nightdrive/sons/pretre_demande.wav');
+      }, priest.walkMs ?? 5200);
+    }, (a + Math.random() * (b - a)) * 1000);
+    return () => {
+      clearTimeout(t); clearTimeout(priestWalkT); clearInterval(priestSeq); clearTimeout(priestHold);
+      clearTimeout(sermonTimer); stopSermonAudio();
+      priestPose = 'idle'; priestFrame = 0; priestOn = false; priestX = null; priestWalking = false;
+      coinAsk = false; sermonOn = false;
     };
-    schedule();
-    return () => { clearTimeout(t); clearTimeout(sermonTimer); stopSermonAudio(); priestPose = 'idle'; coinAsk = false; sermonOn = false; };
   });
 
   function giveCoin(yes) {
     coinAsk = false;
     priestMood = yes ? 'joyeux' : 'vener';
-    priestPose = 'idle';
     playSfx(`/media/nightdrive/sons/${yes ? 'piece' : 'refus'}.wav`);
-    // OUI → la pièce tombe, il se lance dans son sermon joyeux.
-    // NON → pas de sermon : il se vexe et BOUDE (boucle pretre_vener dans le hall),
-    //       et il reste dans cet état tant qu'on ne donne pas. Sa colère ne sort
-    //       qu'au pupitre (sermon vénère).
-    if (yes) setTimeout(() => playSermon('joyeux'), 650);
-    else setTimeout(() => { if (priestMood === 'vener' && sceneTop === 'cathedrale' && !room && !univers) playGrogne(); }, 900); // sa pique, une fois, sur le moment
+    // OUI → la pièce tombe : BÉNÉDICTION (main lumineuse), puis sermon joyeux — il reste.
+    // NON → il encaisse (gueulante → main levée) puis SE DISSOUT (fumée violette).
+    //       Sa pique sonore part avec la gueulante ; sa rancune ne ressort qu'au
+    //       pupitre (sermon vénère), même sans lui : sa voix hante le lieu.
+    if (yes) {
+      playPriest('don', { endHold: 2200 });
+      setTimeout(() => playSermon('joyeux'), 900);
+    } else {
+      playPriest('refus', { fps: 3, then: () => {
+        playPriest('disparition', { fps: 4, then: () => { priestOn = false; priestPose = 'idle'; priestFrame = 0; } });
+      } });
+      setTimeout(() => { if (priestMood === 'vener' && sceneTop === 'cathedrale' && !room && !univers) playGrogne(); }, 300); // sa pique, une fois, avec la gueulante
+    }
   }
   // le sermon est un VRAI enregistrement (long) : tente .wav puis .mp3, la pose et
   // les halos tiennent jusqu'à la fin du son ; aucun fichier → halo 6 s, silence (050).
@@ -1396,6 +1480,7 @@
   function stopSermonAudio() { if (sermonAudio) { try { sermonAudio.pause(); } catch (e) {} sermonAudio = null; } }
   function playSermon(forceMood = null) {
     const mood = forceMood ?? priestMood ?? 'joyeux';   // pièce : selon la réponse · pupitre : toujours joyeux
+    clearInterval(priestSeq); clearTimeout(priestHold); priestFrame = 0;
     priestPose = `sermon_${mood}`;
     sermonOn = true;
     clearTimeout(sermonTimer); stopSermonAudio();
@@ -1479,6 +1564,11 @@
       if (per.smokeRing) urls.push(...per.smokeRing);
       if (per.src) urls.push(per.src);
       for (const u of urls) { const im = new Image(); im.src = u; }
+    }
+    // le prêtre aussi (marche 16 frames : à la volée, l'entrée « sauterait »)
+    const P = SCENES[sceneTop]?.priest;
+    if (P?.poses) for (const v of Object.values(P.poses)) {
+      for (const u of Array.isArray(v) ? v : [v]) { const im = new Image(); im.src = u; }
     }
   });
 
@@ -1601,7 +1691,7 @@
     if (z.open?.type === 'carnet') { carnet = z.open.id; return; }
     if (z.open?.type === 'nokia') { phoneVue = 'accueil'; phoneOpen = true; zoneSfx('taverne', 'phone'); return; }
     if (z.open?.type === 'ciel') { cielOpen = true; return; }
-    if (z.open?.type === 'k7') { k7Open = true; return; }
+    if (z.open?.type === 'k7') { k7OpenBox(); return; }
     if (z.open?.type === 'roll') { rollAsk = true; return; } // le sachet → « rouler un joint ? »
     // ---- les destinations branchées It26 ----
     if (z.open?.type === 'univers') { univers = z.open.id; zoneSfx(sceneTop, z.id); return; }
@@ -1901,12 +1991,15 @@
                   <img class="overlay-layer" src={h} alt="" draggable="false" onerror={hideImg} transition:fade={{ duration: 400 }} />
                 {/each}
               {/if}
-              {#key priestPose}
-                <img class="pretre" class:pretre-demande={priestPose === 'demande'}
-                     src={sc.priest.poses[priestPose] ?? sc.priest.poses.idle}
-                     style="left:{sc.priest.x}%; top:{sc.priest.y}%; width:{sc.priest.w}%; height:{sc.priest.h}%;"
-                     alt="" draggable="false" onerror={hideImg} transition:fade={{ duration: 300 }} />
-              {/key}
+              {#if priestOn}
+                {#key priestPose}
+                  <img class="pretre" class:pretre-demande={priestPose === 'demande'}
+                       src={priestSrc(sc.priest)}
+                       style="left:{priestX ?? sc.priest.x}%; top:{sc.priest.y}%; width:{sc.priest.w}%; height:{sc.priest.h}%;
+                              {priestWalking ? `transition: left ${sc.priest.walkMs ?? 5200}ms linear, transform 550ms cubic-bezier(.2,.7,.2,1);` : ''}"
+                       alt="" draggable="false" onerror={hideImg} transition:fade={{ duration: 300 }} />
+                {/key}
+              {/if}
             {/if}
             <!-- LE SEUIL d'abord dans le DOM : les zones passent au-dessus -->
             <button class="exit" onclick={popScene} title="ressortir (Échap)">
@@ -1931,7 +2024,7 @@
                             background-size:${(10000 / z.w).toFixed(2)}% ${(10000 / z.h).toFixed(2)}%;
                             background-position:${((z.x / (100 - z.w)) * 100).toFixed(2)}% ${((z.y / (100 - z.h)) * 100).toFixed(2)}%;`}"
                 onclick={() => zoneClick(z)}
-                onpointerenter={() => zoomEnter(z)}
+                onpointerenter={() => { if (z.open?.type === 'k7') k7Passby(); zoomEnter(z); }}
                 onpointerleave={zoomLeave}
                 aria-label={z.id}
               ></button>
@@ -1998,7 +2091,8 @@
 
         <!-- ============ UNE PIÈCE ? (le prêtre de la cathédrale, 4e mur) ============ -->
         {#if coinAsk}
-          <div class="roll-ask" role="dialog" aria-label="donner une pièce">
+          <!-- la fenêtre ne couvre JAMAIS le prêtre (Vincent It41) : carte poussée à droite -->
+          <div class="roll-ask coin" role="dialog" aria-label="donner une pièce">
             <div class="roll-card">
               <span class="roll-q">Une petite pièce&nbsp;?</span>
               <span class="roll-sub">pour l'artiste…</span>
@@ -2022,7 +2116,7 @@
               <div class="k7-grid">
                 {#each CASSETTES as c (c.titre)}
                   {@const onair = k7OnAir === c.titre}
-                  <button class="k7" class:onair onclick={() => k7Play(c)} title={onair ? "à l'antenne" : "passer à l'antenne"}>
+                  <button class="k7" class:onair onclick={() => k7Play(c)} onpointerenter={k7Passby} title={onair ? 'stop' : 'lecture'}>
                     <span class="k7-coque">
                       <span class="k7-label" style="background:{c.couleur}">{c.titre}</span>
                       <span class="k7-fen">
@@ -5301,6 +5395,8 @@
     animation: roll-in 220ms ease;
   }
   @keyframes roll-in { from { opacity: 0; } to { opacity: 1; } }
+  /* la demande du prêtre : carte décalée à droite pour ne pas couvrir son anim */
+  .roll-ask.coin { place-items: center end; padding-right: 6%; background: none; }
   .roll-card {
     display: flex; flex-direction: column; align-items: center; gap: 8px;
     padding: 18px 26px;

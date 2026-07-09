@@ -13,7 +13,14 @@ const b = await chromium.launch({ headless: true, args: ['--no-sandbox', '--disa
 const pg = await b.newPage({ viewport: { width: 1280, height: 800 } });
 const errs = [];
 pg.on('pageerror', (e) => errs.push('PAGEERR ' + e.message));
-pg.on('console', (m) => { if (m.type() === 'error') errs.push('CONSOLE ' + m.text()); });
+// CONTRAT SONORE (000/050) : un son attendu absent = SILENCE voulu, pas une erreur.
+// Le 404 d'un fichier de /sons/ est donc toléré ; tout autre 404 reste fatal.
+pg.on('console', (m) => {
+  if (m.type() !== 'error') return;
+  const url = m.location()?.url ?? '';
+  if (/Failed to load resource/.test(m.text()) && url.includes('/media/nightdrive/sons/')) return;
+  errs.push('CONSOLE ' + m.text() + (url ? ` (${url})` : ''));
+});
 
 const poll = async (sel, n, ms) => {
   const out = [];
