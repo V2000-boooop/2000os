@@ -12,6 +12,9 @@ export const player = $state({
   queue: [],     // ids des sons enchaînés (ex. contenu d'un dossier)
   qIndex: -1,
   qLabel: '',    // nom du dossier en cours d'écoute
+  randomStart: false, // vrai → l'Émetteur démarre le son à un instant aléatoire + fondu (radio)
+  fadeIn: false,      // vrai → l'Émetteur démarre le son avec un fondu d'entrée d'1 s (sans seek aléatoire)
+  glovebox: false,    // vrai → face à la boîte à gant : jouer la variante `srcGlove` (texture étouffée) au MÊME instant
 });
 
 // Élément <audio> réel, possédé par EmetteurApp quand sa fenêtre existe.
@@ -44,6 +47,7 @@ export function playTrack(item, ctx = null) {
   }
   player.trackId = item.id;
   player.caption = '';
+  player.randomStart = !!(ctx && ctx.random);   // radio : arriver n'importe où dans l'enregistrement
   player.autoplay = true;
   openEmetteurWindow();
 }

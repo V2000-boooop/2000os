@@ -1,0 +1,5 @@
+Sprites des coureurs (optionnel, mis par-dessus le placeholder).
+Nommage : <key>_run_<n>.webp  (ex: eclair_run_1.webp ... eclair_run_4.webp)
+keys dans src/os/nightdrive/courses.js (eclair, txakoli, gazelle, mulet, sanglier - editable).
+Profil, tourne vers la DROITE, fond vert #00b140, ~120px de haut.
+Puis mets frames:<nb> sur le partant dans courses.js.

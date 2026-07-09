@@ -124,17 +124,17 @@ def triche_confessionnal(off_c, on_c):
 
 
 def triche_bougies(off_c, on_c):
-    """Flammes et cires seulement (clé de luminance sur la version on),
-    plus la lueur qu'elles jettent autour d'elles."""
-    o = np.asarray(on_c, float)
+    """Flammes et cires SEULEMENT, prises dans l'image OFF elle-même (la paire
+    off/on de la cathédrale n'est PAS alignée : les bougies de la version on
+    sont ailleurs → dédoublement). On éclaire donc les bougies de l'OFF, boostées —
+    alignement au pixel garanti. Halo radial supprimé (retour Vincent 2026-07-09)."""
+    o = np.asarray(off_c, float)
     lum = (0.299 * o[..., 0] + 0.587 * o[..., 1] + 0.114 * o[..., 2]) / 255.0
-    p = max(0.2, float(np.percentile(lum, 99)))
-    # clé resserrée : flammes et cires seulement — le mur éclairé derrière
-    # retombe dans le halo radial (sinon : pan lumineux coupé au bord de boîte)
-    core = np.clip((lum / p - 0.50) / 0.30, 0.0, 1.0)
+    p = max(0.2, float(np.percentile(lum, 99.5)))
+    core = np.clip((lum / p - 0.55) / 0.25, 0.0, 1.0)  # les flammes de l'off (déjà lumineuses)
     core = _blur_a(core, 2)
-    halo = _blur_a(core, max(6, on_c.width // 8)) * 0.45
-    return o, np.maximum(core, halo)
+    boost = np.clip(o * 1.5 + 14, 0, 255)              # au survol : elles s'embrasent
+    return boost, core
 
 
 def triche_pizza(off_c, on_c):

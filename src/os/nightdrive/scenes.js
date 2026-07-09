@@ -75,10 +75,43 @@ export const SCENES = {
     zones: [
       { id: 'tableau',    x: 1,    y: 30.8, w: 9.5,  h: 17.5, open: { type: 'cocktails' },   lum: L('laride_tableau') }, // la carte : cocktails réels, verre animé
       { id: 'photobooth', x: 62.6, y: 22,   w: 13.4, h: 36,   open: { type: 'photobooth' }, lum: L('laride_photobooth') }, // la cabine → les photos de soirée (pellicule)
-      { id: 'vestiaire',  x: 75,   y: 23,   w: 11,   h: 37,   open: { type: 'friperie' },   lum: L('laride_vestiaire') },  // le portant → la friperie (chaque fringue cliquable)
+      { id: 'vestiaire',  x: 75,   y: 23,   w: 11,   h: 37,   goto: 'vestiaire', open: { type: 'friperie' }, lum: L('laride_vestiaire') },  // le portant → le VESTIAIRE (sous-scène gigogne D15 : décor dressing off/on). goto+open = fallback : tant que la paire vestiaire_dressing n'est pas là, clic = friperie (It??). Dès qu'elle existe, la porte s'ouvre seule.
       { id: 'toilettes',  x: 88.5, y: 29,   w: 10.8, h: 36.5, open: { type: 'toilettes' },  lum: L('laride_toilettes') },  // le mur des chiottes → lieu à sound design
       { id: 'djbooth',    x: 52,   y: 56,   w: 42.5, h: 37,   open: { type: 'dj' },        lum: L('laride_djbooth') },    // la cabine : deux CDJ, piste A / piste B
     ],
+  },
+  // ---- LE VESTIAIRE de LA RIDE (gigogne D15, enfant de laride) : le décor
+  // dressing (miroir plein pied, portant de survêts, étagères de baskets,
+  // néon d'essayage violet off/on). Cliquer la zone `vestiaire` de laride
+  // plonge ici (zoom-crossfade) ; Échap dépile vers laride (jamais sortie
+  // de destination — garde-fou D12). Son : `porte_vestiaire` à l'entrée,
+  // `ressortir` au retour, `ambiance_vestiaire` en lit (silence si absents, 050).
+  //
+  // SCAFFOLD JEU D'HABILLAGE (laride_vestiaire_habillage.md) : le décor est
+  // VISITABLE dès maintenant. Le jeu d'habillage (dress-up type Sims du raver
+  // alien, calques PNG empilés) viendra quand Vincent aura produit les PNG du
+  // perso (base + fringues par slot). En attendant : `persoZone` réserve la
+  // zone centrale VIDE devant le miroir où le sprite du raver se posera
+  // (pivot aux pieds), et `zones: []` → la scène s'ouvre nue (aucune lueur
+  // parasite). AUCUN calque perso n'est rendu tant que les assets manquent.
+  vestiaire: {
+    parent: 'laride',
+    off: `${S}/vestiaire_dressing_off_v1.webp`,
+    on: `${S}/vestiaire_dressing_on_v1.webp`,
+    // ZONE PERSO (jeu d'habillage) : le raver PLEIN CADRE, centré et ENTIÈREMENT
+    // visible (tête → pieds). En % du cadre 1536×1024. Les calques sont en ratio
+    // 2:3 (portrait) et rendus contain (aucun écrasement) : la zone est plus haute
+    // et centrée pour que les JAMBES et les PIEDS soient visibles (l'ancienne UI
+    // en bas de scène a disparu, remplacée par des cyclers par zone du corps).
+    // pivot milieu-bas = les pieds (§2.1) : pieds ≈ y+h ≈ 94 %, tête ≈ y ≈ 8 %.
+    persoZone: { x: 33, y: 8, w: 34, h: 86 },
+    // JEU D'HABILLAGE v1 BRANCHÉ (dressup.js) : le raver alien se rend en pile de
+    // calques PNG dans cette persoZone (pivot pieds), l'UI (onglets Bas·Pieds·
+    // Haut·Coiffe + rail de vignettes + SURPRENDS-MOI + reset) s'affiche par-
+    // dessus le décor. JOUABLE EN PLACEHOLDER tant que les PNG manquent (aplats
+    // étiquetés) ; déposer les fichiers de dressup.js les remplace tout seuls.
+    // zones vides : aucune lueur parasite, l'habillage a ses propres contrôles.
+    zones: [],
   },
   barque: {
     parent: 'quai',
@@ -92,8 +125,8 @@ export const SCENES = {
     zones: [
       { id: 'lampe',      x: 45, y: 49, w: 14, h: 22, open: { type: 'ciel' }, boost: 1.1, light: true }, // la lanterne → ciel étoilé (light: pas de crop de survol, sa vie = le halo continu)
       { id: 'radio',      x: 11, y: 62, w: 20, h: 29, open: { type: 'k7' } },                             // la boombox → les cassettes
-      { id: 'weed',       x: 29, y: 72, w: 13, h: 16, open: { type: 'roll' } },                           // le sachet → « rouler un joint ? Myrtille / Stick »
-      { id: 'pizza',      x: 45, y: 68, w: 21, h: 22, open: { type: 'carnet', id: 'pizzerias' } },        // la pizza → les pizzerias
+      { id: 'weed',       x: 30, y: 73, w: 12, h: 14, open: { type: 'roll' }, soft: true, aura: '#9b6cff' }, // le sachet → « rouler un joint ? » (lueur magique violette, rendu doux)
+      { id: 'pizza',      x: 42, y: 74, w: 14, h: 15, open: { type: 'carnet', id: 'pizzerias' }, soft: true }, // la pizza → pizzerias (resserrée sur la pizza, rendu doux, ne mange plus Stick)
       { id: 'cathedrale', x: 0,  y: 1,  w: 17, h: 20, goto: 'cathedrale', boost: 1.2 },                   // les tours, en haut à gauche
       { id: 'taverne',    x: 59, y: 20, w: 11, h: 6,  goto: 'taverne', boost: 1.75, aura: '#ffb24a' },    // LA TAVERNE
       { id: 'laride',     x: 73, y: 17, w: 11, h: 8,  goto: 'laride',  boost: 1.75, aura: '#ff3140' },    // LA RIDE, néon rouge
@@ -113,18 +146,50 @@ export const SCENES = {
           roll: [1,2,3,4,5,6,7].map((n) => `${S}/perso/myrtille_roll_${n}.webp`),
           // séquence « souffle » COMPLÈTE (8 frames) : elle souffle, crache, le rond monte au
           // coin et se dissipe — toute la fumée est peinte dans les frames (aucun rond codé).
-          blow: [1,2,3,4,5,6,7,8].map((n) => `${S}/perso/myrtille_blow_${n}.webp`),
-          smoke: `${S}/perso/myrtille_roll_7.webp`, // pose « fume » tenue entre les taffes
+          blow: [1,2,3,4,5,6].map((n) => `${S}/perso/myrtille_smoke_${n}.webp`), // taffe → recrache → détente (anim riche, calée sur idle)
+          ring: [1,2,3,4,5,6,7,8].map((n) => `${S}/perso/myrtille_blow_${n}.webp`), // le ROND de fumée qui monte (anim d'origine, gardée)
+          smoke: `${S}/perso/myrtille_smoke_6.webp`, // pose détendue tenue entre les taffes
+          // PALIER 2 (5e taffe) : maxi taffe → exhale → jambes se replient → lotus qui LÉVITE.
+          // Dernière frame tenue (held) + lévitation CSS (perso-float2). state4 (Shiva) à venir.
+          state2: [1,2,3,4,5,6,7,8,9].map((n) => `${S}/perso/myrtille_state2_${n}.webp`),
+          // fume DANS l'état lotus lévitant (boucle taffe→exhale→lotus serein), calée sur state2_9.
+          blow2: [1,2,3,4,5,6].map((n) => `${S}/perso/myrtille_blow2_${n}.webp`),
+          // CHARGE pré-Shiva (10e taffe) : taffe → l'aura violette EXPLOSE (pic frame 6) → exhale.
+          // Joue juste avant l'événement plein écran + la transformation en déesse (state4).
+          charge4: [1,2,3,4,5,6,7,8,9,10].map((n) => `${S}/perso/myrtille_charge4_${n}.webp`),
+          // PALIER ULTIME : transformation en Shiva 6 bras (yeux lumineux, halo, mudras).
+          // canvas plus large (bras déployés). Dernière frame = déesse tenue (held) + float4.
+          state4: [1,2,3,4,5,6,7,8,9,10].map((n) => `${S}/perso/myrtille_state4_${n}.webp`),
+          // ÉTAT DE GRÂCE : la Shiva refume (taffe → grosse exhale violette → retour), bras en
+          // mudra, halo. Joué LENTEMENT en boucle → elle « respire » dans son état ultime.
+          blow4: [1,2,3,4,5,6,7,8,9,10].map((n) => `${S}/perso/myrtille_blow4_${n}.webp`),
+          // PALIER SUPRÊME (15e taffe) : la Shiva se dissout → BOULE D'ÉNERGIE radiante.
+          // Dernière frame = l'orbe tenue (held). Événement encore plus fort à la bascule.
+          state6: [1,2,3,4,5,6,7,8,9,10].map((n) => `${S}/perso/myrtille_state6_${n}.webp`),
+          // VRAIE FORME FINALE tenue : l'être d'énergie en lotus (3e œil). 10 frames jouées en
+          // BOUCLE CONTINUE (l'énergie/aura shimmer) → elle vit sans bouger. Sert aussi d'anim de
+          // REFUS quand on essaie de la faire fumer (elle n'a plus besoin). Boucle gérée côté moteur.
+          final6: [1,2,3,4,5,6,7,8,9,10].map((n) => `${S}/perso/myrtille_final_${n}.webp`),
         } },
-      // STICK (le raver) : LÉVITE (idle qui monte/descend, ombre-plancher réactive).
-      { id: 'stick', name: 'Stick', x: 62, y: 27, w: 22, h: 44, anim: 'levit', shadow: { x: 63.5, y: 71, w: 17, h: 4.5 },
-        poses: { idle: `${S}/perso/raver.webp` } },
+      // STICK (le raver) : ASSIS EN TAILLEUR sur le pont, il roule et fume (20 frames
+      // fond vert détouré + recalé sur la même assise → zéro saut). idle = assis ;
+      // roll = 1→10 (roule → allume) puis il fume ; blow = 11→20 (taffe → recrache →
+      // contemplatif). SEUL Stick fait monter la défonce du joueur (etat.svelte.js).
+      { id: 'stick', name: 'Stick', x: 61, y: 34, w: 26, h: 46, anim: 'lean',
+        shadow: { x: 64, y: 78, w: 20, h: 3.5 },
+        poses: {
+          idle:  `${S}/perso/raver_roll_1.webp`,
+          roll:  [1,2,3,4,5,6,7,8,9,10].map((n) => `${S}/perso/raver_roll_${n}.webp`),
+          blow:  [11,12,13,14,15,16,17,18,19,20].map((n) => `${S}/perso/raver_roll_${n}.webp`),
+          smoke: `${S}/perso/raver_roll_20.webp`, // pose « fume » tenue entre les taffes
+        } },
     ],
   },
   cathedrale: {
     parent: 'quai',
     off: `${S}/cathedrale_off_v1.webp`,
     on: `${S}/cathedrale_on_v1.webp`,
+    breath: false, // paire off/on NON alignée (deux générations IA) : la respiration superposait des bougies fantômes à droite (It39) — pas de battement sur cette scène
     // zones mesurées sur la paire (2026-07-04). Lumières d'abord : les
     // destinations (univers dark/angélique, discours, vocaux, pourboire)
     // seront branchées aux itérations suivantes — clic = lueur en attendant.

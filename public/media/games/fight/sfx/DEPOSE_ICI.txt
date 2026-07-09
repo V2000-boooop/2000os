@@ -1,0 +1,4 @@
+Sons du combat (remplacent les bips). Format .wav, nommés :
+hit.wav (poing léger) · heavy.wav (coup lourd) · block.wav (garde) · whoosh.wav (coup dans le vide)
+jump.wav (saut) · ko.wav (K.O.) · super.wav (spéciale)
+Banques CC0/gratuites : themotionmonkey (arcade CC0), pixabay, mixkit, itch.io.

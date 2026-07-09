@@ -98,7 +98,7 @@ export async function bed(name, vol = AMB_VOL) {
   const gain = c.createGain(); gain.gain.value = 0;
   src.connect(filter).connect(gain).connect(master);
   src.start();
-  gain.gain.linearRampToValueAtTime(ducked ? 0 : vol, c.currentTime + 0.6);
+  gain.gain.linearRampToValueAtTime(ducked ? vol * 0.2 : vol, c.currentTime + 0.6); // ducké = murmure, pas silence (It36)
   bedNode = { src, gain, filter, name, vol };
 }
 
@@ -117,7 +117,7 @@ export function duck(on) {
   ducked = on;
   const n = bedNode; if (!n) return;
   const now = ac().currentTime;
-  n.gain.gain.linearRampToValueAtTime(on ? 0 : n.vol, now + 0.4);
+  n.gain.gain.linearRampToValueAtTime(on ? n.vol * 0.2 : n.vol, now + 0.4);
   n.filter.frequency.linearRampToValueAtTime(on ? 500 : 20000, now + 0.4);
 }
 

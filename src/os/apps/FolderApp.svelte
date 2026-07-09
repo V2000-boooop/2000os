@@ -14,8 +14,8 @@
   const soundItems = $derived(items.filter((it) => it.kind === 'audio'));
   const visualItems = $derived(items.filter((it) => it.kind === 'image' || it.kind === 'video'));
   const noteItems = $derived(items.filter((it) => it.kind === 'note'));
-  const exeItems = $derived(items.filter((it) => it.kind === 'exe'));
-  const otherItems = $derived(items.filter((it) => !['audio', 'image', 'video', 'note', 'exe'].includes(it.kind)));
+  const exeItems = $derived(items.filter((it) => it.kind === 'exe' || it.kind === 'game'));
+  const otherItems = $derived(items.filter((it) => !['audio', 'image', 'video', 'note', 'exe', 'game'].includes(it.kind)));
 
   $effect(() => {
     soundItems.forEach(requestDuration);

@@ -10,7 +10,24 @@
   import { sound, play, initSoundOnGesture, toggleSound } from './sound.svelte.js';
   import Window from './Window.svelte';
   import { night, enterNight } from './nightdrive/night.svelte.js';
-  import NightDrive from './nightdrive/NightDrive.svelte';
+
+  // NIGHT DRIVE en différé (code-splitting) : le bureau démarre léger, le monde
+  // n'est téléchargé qu'au besoin — préchargé dès que le navigateur est au repos,
+  // donc invisible pour l'utilisateur. La chorégraphie D12 ne change pas.
+  let NightDriveComp = $state(null);
+  let ndLoading = null;
+  function loadNightDrive() {
+    if (!ndLoading) {
+      ndLoading = import('./nightdrive/NightDrive.svelte').then((m) => {
+        NightDriveComp = m.default;
+      });
+    }
+    return ndLoading;
+  }
+  function startNight() {
+    loadNightDrive(); // en parallèle de la chorégraphie (~6 s de marge)
+    enterNight();
+  }
 
   // Chorégraphie Night Drive : le bureau reste monté du début à la fin — il
   // s'efface et revient, mais son état (fenêtres, écoute, sélection) ne bouge pas.
@@ -36,6 +53,9 @@
 
   onMount(() => {
     restoreSession();
+    // Préchargement de Night Drive quand le navigateur souffle (fallback 3 s).
+    if ('requestIdleCallback' in window) requestIdleCallback(loadNightDrive);
+    else setTimeout(loadNightDrive, 3000);
     const t = setInterval(() => (now = new Date()), 20000);
     // Le son ne peut démarrer qu'après un premier geste (règle navigateur).
     window.addEventListener('pointerdown', initSoundOnGesture, { once: false });
@@ -96,7 +116,8 @@
   <button
     class="nightkey"
     class:on={night.phase !== 'off'}
-    onclick={enterNight}
+    onclick={startNight}
+    onpointerenter={loadNightDrive}
     disabled={night.busy || night.phase !== 'off'}
     title="night mode"
   >
@@ -140,7 +161,9 @@
   </footer>
 
   <!-- la Destination — montée par-dessus le bureau, jamais à sa place -->
-  <NightDrive />
+  {#if NightDriveComp}
+    <NightDriveComp />
+  {/if}
 </main>
 
 <style>

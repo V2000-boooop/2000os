@@ -1,0 +1,94 @@
+---
+// TEST ISOLÉ — chrome rétro 98/2000.css (aucun impact sur l'OS réel).
+// Ouvre http://localhost:4321/test-98 pour juger le rendu.
+// Si tu valides, on branche le style sur Window.svelte ; sinon on jette ce fichier.
+---
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <title>2000 OS — test chrome 98/2000</title>
+    <!-- 98.css : patterns Win98/2000 authentiques, ~10ko, via CDN -->
+    <link rel="stylesheet" href="https://unpkg.com/98.css" />
+    <style>
+      body { margin:0; background:#0a0b14 url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="8" height="8"><rect width="8" height="8" fill="%230a0b14"/><circle cx="1" cy="1" r="0.6" fill="%23161a2e"/></svg>'); font-family:sans-serif; padding:28px; display:flex; flex-wrap:wrap; gap:22px; align-items:flex-start; }
+      h1 { color:#8fa0ff; font:600 13px monospace; width:100%; margin:0 0 4px; }
+      p.sub { color:#5f6ba0; font:11px monospace; width:100%; margin:0 0 12px; }
+      .window { width:300px; }
+      .stack { display:flex; flex-direction:column; gap:8px; }
+    </style>
+  </head>
+  <body>
+    <h1>2000 OS — test chrome 98/2000.css</h1>
+    <p class="sub">Rendu des fenêtres/boutons rétro « prêts à l'emploi ». Test isolé — l'OS réel n'est pas touché.</p>
+
+    <!-- Fenêtre classique -->
+    <div class="window">
+      <div class="title-bar">
+        <div class="title-bar-text">VINCENT 2000 — night_drive.exe</div>
+        <div class="title-bar-controls">
+          <button aria-label="Minimize"></button>
+          <button aria-label="Maximize"></button>
+          <button aria-label="Close"></button>
+        </div>
+      </div>
+      <div class="window-body">
+        <p>Tu roules sur la nationale. L'antenne grésille. Choisis une destination.</p>
+        <div class="stack" style="margin-top:10px">
+          <button>LA RIDE</button>
+          <button>LE PMU</button>
+          <button>LA RADIO PIRATE</button>
+        </div>
+      </div>
+      <div class="status-bar">
+        <p class="status-bar-field">03:14 AM</p>
+        <p class="status-bar-field">88.6 FM</p>
+        <p class="status-bar-field">CPU 2%</p>
+      </div>
+    </div>
+
+    <!-- Onglets + champs -->
+    <div class="window">
+      <div class="title-bar">
+        <div class="title-bar-text">réglages_platine.cpl</div>
+        <div class="title-bar-controls"><button aria-label="Close"></button></div>
+      </div>
+      <div class="window-body">
+        <menu role="tablist">
+          <li role="tab" aria-selected="true"><a href="#">Deck</a></li>
+          <li role="tab"><a href="#">FX</a></li>
+          <li role="tab"><a href="#">Radio</a></li>
+        </menu>
+        <div class="window" role="tabpanel">
+          <div class="window-body">
+            <div class="field-row"><label>BPM</label><input type="text" value="138" /></div>
+            <div class="field-row">
+              <input id="ukg" type="checkbox" checked /><label for="ukg">shuffle UKG</label>
+            </div>
+            <div class="field-row" style="margin-top:8px">
+              <label for="crossfade">Crossfade</label>
+              <input id="crossfade" type="range" min="0" max="100" value="42" />
+            </div>
+            <div class="field-row" style="margin-top:10px; justify-content:flex-end; gap:6px">
+              <button>Annuler</button><button>OK</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Popup / dialogue -->
+    <div class="window" style="width:250px">
+      <div class="title-bar">
+        <div class="title-bar-text">message</div>
+        <div class="title-bar-controls"><button aria-label="Close"></button></div>
+      </div>
+      <div class="window-body">
+        <p style="display:flex; gap:10px; align-items:center;">
+          <span style="font-size:26px">📼</span>
+          Insère le minidisc de 2019. Il y avait un truc dessus.
+        </p>
+        <div style="margin-top:10px; text-align:right"><button>OK</button></div>
+      </div>
+    </div>
+  </body>
+</html>

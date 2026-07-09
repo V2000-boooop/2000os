@@ -26,8 +26,13 @@
   import { JOURNAL } from './journal.js';
   import { EVENEMENT } from './evenement.js';
   import { PARIS } from './paris.js';
+  import PmuCourse from './PmuCourse.svelte';
   import { PHOTOS } from './soiree.js';
   import { FRINGUES } from './friperie.js';
+  import { SLOTS as DU_SLOTS, BASE as DU_BASE, EXPECTED_FILES as DU_FILES, variantSrc, variantOf, loadOutfit, saveOutfit, randomOutfit, defaultOutfit } from './dressup.js';
+  import { PALETTE as WC_PALETTE, TAILLES as WC_TAILLES, GRID as WC_GRID, chargerTags, sauverTags, ajouterTrait } from './tag.js';
+  import { matrix3dForQuad } from './warp.js';
+  import { etat, boire, fumer } from './etat.svelte.js';
   import { createUnivers } from './univers.js';
   import { porte, ressortir, zoneSfx, setAmbiance, duckAmbiance, loop } from './worldsound.js';
   // [DEMO PMU reactsound] couche Web Audio optionnelle, branchée UNIQUEMENT sur le PMU
@@ -47,8 +52,8 @@
   let city = null;
 
   $effect(() => {
-    if (!cvs || !mcvs) return;
-    const c = createCity(cvs, mcvs);
+    if (!cvs) return;
+    const c = createCity(cvs, null); // rétroviseur NON animé (retiré — n'avait pas de sens)
     c.start();
     city = c;
     // la Destination se démonte (phase off) : la ville s'endort avec elle
@@ -144,8 +149,16 @@
     track ? track.name.toUpperCase() : 'VINCENT 2000 RADIO · 93.00 FM · ICI LA NUIT'
   );
 
+  // clic mécanique de l'autoradio : joué EN PREMIER sur CHAQUE bouton ; puis le son arrive en fondu (1 s, géré par l'Émetteur)
+  // préchargé dès le montage (et plus au premier clic) : le clac part sans latence
+  let clicEl = null;
+  try { clicEl = new Audio('/media/ui/clic_autoradio.webm'); clicEl.preload = 'auto'; } catch (e) {}
+  function arClic() { try { if (!clicEl) return; const c = clicEl.cloneNode(); c.volume = 0.55; c.play().catch(() => {}); } catch (e) {} }
+  function arStep(dir) { arClic(); setTimeout(() => { player.fadeIn = true; step(dir); }, 480); } // le son démarre APRÈS le clic, en fondu 1 s
+  function arEject() { arClic(); eject(); }
   function toggle() {
-    if (track) playTrack(track); // même son à l'antenne → play/pause (moteur conservé)
+    arClic();
+    if (track) playTrack(track); // pilote la piste à l'antenne ; le son de base (physique) ne se met jamais en pause
   }
 
   // ---- les presets : 6 sons prêts à passer à l'antenne ----
@@ -158,7 +171,9 @@
   function preset(i) {
     const it = PRESETS[i];
     if (!it || p !== 'drive') return;
-    playTrack(it, { list: PRESETS, label: 'NIGHT DRIVE · 93.00 FM' });
+    arClic();
+    // le son démarre APRÈS le clic, avec un fondu d'1 s (touche 6 = seek aléatoire + fondu)
+    setTimeout(() => { player.fadeIn = i !== 5; playTrack(it, { list: PRESETS, label: 'NIGHT DRIVE · 93.00 FM', random: i === 5 }); }, 480);
   }
 
   // ---- l'horloge du tableau de bord = la même heure que le bureau (registre) ----
@@ -251,6 +266,45 @@
   // le zoom-crossfade plonge vers elle (menus PS2) et en ressorte au retour.
   let stack = $state([{ id: ROOT }]);
   const inScene = $derived(stack.length > 1); // on a quitté l'habitacle
+  const inGlove = $derived(stack.some((s) => s.id === 'glovebox')); // la boîte à gant : physiquement TOUJOURS dans la voiture
+
+  // ---- SON DE BASE de l'habitacle (ambiance intérieur cuir) : démarre dès qu'on entre dans l'habitacle (d'où qu'on vienne),
+  // se coupe si on quitte le lieu, si on entre dans une destination (boîte à gant, etc.) ou si l'autoradio/Émetteur diffuse ----
+  let carRadio = null, carOn = false, carFade = null;
+  const CAR_VOL = 0.8;
+  function carFadeTo(target, ms) {
+    if (carFade) clearInterval(carFade);
+    const a = carRadio, start = a.volume, t0 = performance.now();
+    carFade = setInterval(() => {
+      const k = Math.min(1, (performance.now() - t0) / ms);
+      a.volume = Math.max(0, Math.min(1, start + (target - start) * k));
+      if (k >= 1) { clearInterval(carFade); carFade = null; if (target === 0) a.pause(); }
+    }, 40);
+  }
+  function updateCarRadio() {
+    if (typeof Audio === 'undefined') return;
+    if (!carRadio) { carRadio = new Audio('/media/nightdrive/son_habitacle.webm'); carRadio.loop = true; carRadio.volume = 0; }
+    const on = p === 'drive' && (!inScene || inGlove) && !player.playing; // la boîte à gant reste dans la voiture → l'ambiance continue
+    if (on && !carOn) {                 // ALLUMAGE : on arrive n'importe où dans l'enregistrement + fondu
+      carOn = true;
+      const seekRand = () => { const d = carRadio.duration; if (d && isFinite(d)) { try { carRadio.currentTime = Math.random() * d * 0.9; } catch (e) {} } };
+      carRadio.volume = 0;
+      carRadio.play().then(() => { seekRand(); carFadeTo(CAR_VOL, 900); }).catch(() => {});
+      if (carRadio.readyState < 1) carRadio.addEventListener('loadedmetadata', seekRand, { once: true });
+    } else if (!on && carOn) {          // EXTINCTION : fondu de sortie puis pause
+      carOn = false; carFadeTo(0, 500);
+    }
+  }
+  $effect(() => { p; inScene; player.playing; updateCarRadio(); });
+  // Physique : l'autoradio est DANS la voiture → quitter l'habitacle coupe la radio... SAUF la boîte à gant (on reste dans la voiture).
+  $effect(() => { if (p === 'drive' && inScene && !inGlove && player.playing) eject(); });
+  // Face à la boîte à gant : le son (radio ou ambiance) passe à sa texture « boîte à gant », au même instant.
+  $effect(() => { player.glovebox = inGlove && p === 'drive'; });
+  onMount(() => {
+    const kick = () => updateCarRadio();          // relance après un geste (politique autoplay navigateur)
+    window.addEventListener('pointerdown', kick);
+    return () => { window.removeEventListener('pointerdown', kick); if (carFade) clearInterval(carFade); if (carRadio) carRadio.pause(); };
+  });
   const sceneTop = $derived(stack[stack.length - 1].id);
 
   function pushScene(z) {
@@ -267,13 +321,12 @@
     }
   }
 
-  // l'arrivée d'une scène : fondu + très léger recul — sur le zoom du parent,
-  // ça compose le zoom-crossfade ; au dépilement, l'inverse (la porte recule)
+  // l'arrivée d'une scène : simple fondu (pas de zoom — le zoom-cadrage est réservé à l'habitacle)
   function arrive(node) {
     return {
-      duration: 950,
+      duration: 420,
       easing: cubicOut,
-      css: (t, u) => `opacity:${t}; transform: scale(${1 + u * 0.1});`,
+      css: (t) => `opacity:${t};`,
     };
   }
 
@@ -744,12 +797,288 @@
     if (room === 'grattage' && gratCvs && !gratRevealed) gratCouche();
   });
 
+  // ============ LE MUR À TAGUER DES CHIOTTES (3.1) ============
+  // canvas 2D, spray façon Jet Set Radio (grain + coulures), trace persistante
+  // vectorielle (localStorage, plafond FIFO — cf. tag.js). Le mur EST enfant de
+  // laride (room='toilettes' dans la pile gigogne, Échap dépile — D15).
+  let wcCvs = $state(null);
+  let wcCoul = $state(0);        // index couleur bombe (PALETTE)
+  let wcTaille = $state(1);      // index taille (TAILLES)
+  let wcTags = [];               // liste vectorielle chargée (les traits d'avant)
+  let wcSpraying = false;
+  let wcTrait = null;            // trait en cours { c, s, p:[…] } en coords GRID
+  let wcDrips = [];              // coulures en cours d'animation
+  let wcRaf = 0;
+  let wcAmb = null;              // boucle sifflement de bombe (optionnelle, 050)
+
+  // --- WC en PERSPECTIVE : la pièce est une IMAGE ; le tag se projette sur le
+  // MUR GAUCHE (4 coins en fraction du cadre) via matrix3d (warp.js). ---
+  let wcLit = $state(true);      // néon allumé / éteint (blacklight)
+  let wcWarp = $state('');       // matrix3d du calque de tag
+  let wcFrameEl = $state(null);  // le cadre (pour mesurer les 4 coins réels)
+  // 4 coins du pan de mur gauche, fraction (0..1) du cadre — AJUSTABLES si le tag déborde.
+  const WC_WALL = { hg:{x:0.00,y:0.02}, hd:{x:0.455,y:0.20}, bg:{x:0.00,y:0.95}, bd:{x:0.455,y:0.56} };
+  function wcComputeWarp() {
+    if (!wcFrameEl || !wcCvs) return;
+    const w = wcFrameEl.clientWidth, h = wcFrameEl.clientHeight;
+    if (!w || !h) return;
+    wcWarp = matrix3dForQuad(w, h, {
+      hg:{x:WC_WALL.hg.x*w, y:WC_WALL.hg.y*h}, hd:{x:WC_WALL.hd.x*w, y:WC_WALL.hd.y*h},
+      bg:{x:WC_WALL.bg.x*w, y:WC_WALL.bg.y*h}, bd:{x:WC_WALL.bd.x*w, y:WC_WALL.bd.y*h},
+    });
+  }
+
+  // convertit un event pointeur → coords GRID (0..GRID) sur le canvas
+  function wcXY(e) {
+    // le calque est déformé par matrix3d → offsetX/Y arrivent déjà en coords
+    // LOCALES non déformées (le navigateur inverse la transform pour le hit-test).
+    const w = wcCvs.clientWidth || 1, h = wcCvs.clientHeight || 1;
+    return [ (e.offsetX / w) * WC_GRID, (e.offsetY / h) * WC_GRID ];
+  }
+  // dessine un jet de spray (nuage de points, dense au centre) à x,y (coords GRID)
+  function wcSpray(g, x, y, rGrid, hex) {
+    const w = wcCvs.width, h = wcCvs.height;
+    const px = (x / WC_GRID) * w, py = (y / WC_GRID) * h;
+    const r = (rGrid / WC_GRID) * w;
+    g.fillStyle = hex;
+    const n = Math.round(rGrid * 2.2);
+    for (let i = 0; i < n; i++) {
+      const a = Math.random() * Math.PI * 2;
+      const d = Math.pow(Math.random(), 0.6) * r; // densité vers le centre
+      g.globalAlpha = 0.06 + Math.random() * 0.16; // grain translucide
+      g.fillRect(px + Math.cos(a) * d, py + Math.sin(a) * d, 1.5, 1.5);
+    }
+    g.globalAlpha = 1;
+  }
+  // repeint tout le mur : fond carrelage → tags Vincent → tags visiteur → trait courant
+  function wcRepaint() {
+    if (!wcCvs) return;
+    const g = wcCvs.getContext('2d');
+    const w = wcCvs.width, h = wcCvs.height;
+    g.globalCompositeOperation = 'source-over';
+    g.globalAlpha = 1;
+    g.clearRect(0, 0, w, h);
+    // Les tags de Vincent (RAVE EUSKADI…) sont DÉJÀ peints dans l'image du mur →
+    // le canvas ne porte QUE les tags du visiteur, projetés par-dessus.
+    g.globalAlpha = 1;
+    for (const tr of wcTags) wcPaintTrait(g, tr);
+    if (wcTrait) wcPaintTrait(g, wcTrait);
+  }
+  // peint un trait vectoriel entier (série de sprays le long de la polyligne)
+  function wcPaintTrait(g, tr) {
+    const hex = WC_PALETTE[tr.c]?.hex ?? '#fff';
+    const p = tr.p;
+    for (let i = 0; i < p.length - 2; i += 2) {
+      const x0 = p[i], y0 = p[i + 1], x1 = p[i + 2], y1 = p[i + 3];
+      const seg = Math.hypot(x1 - x0, y1 - y0);
+      const steps = Math.max(1, Math.round(seg / 4));
+      for (let s = 0; s <= steps; s++) {
+        const t = s / steps;
+        wcSpray(g, x0 + (x1 - x0) * t, y0 + (y1 - y0) * t, tr.s, hex);
+      }
+    }
+    if (p.length === 2) wcSpray(g, p[0], p[1], tr.s, hex);
+  }
+  // boucle des coulures : de légères gouttes descendent puis figent
+  function wcDripLoop() {
+    if (!wcCvs) return;
+    const g = wcCvs.getContext('2d');
+    const w = wcCvs.width, h = wcCvs.height;
+    let alive = false;
+    for (const d of wcDrips) {
+      if (d.life <= 0) continue;
+      alive = true;
+      d.vy += 0.02;
+      d.y += d.vy;
+      d.life--;
+      g.globalAlpha = 0.5;
+      g.fillStyle = d.hex;
+      g.fillRect((d.x / WC_GRID) * w, (d.y / WC_GRID) * h, 2, 3);
+      g.globalAlpha = 1;
+    }
+    wcDrips = wcDrips.filter((d) => d.life > 0);
+    if (alive) wcRaf = requestAnimationFrame(wcDripLoop);
+    else wcRaf = 0;
+  }
+  function wcDown(e) {
+    if (!wcCvs) return;
+    wcSpraying = true;
+    const [x, y] = wcXY(e);
+    wcTrait = { c: wcCoul, s: WC_TAILLES[wcTaille], p: [Math.round(x), Math.round(y)] };
+    if (!wcAmb) wcAmb = loop('zone_laride_bombe', 0.5); // sifflement optionnel (silence si absent)
+    wcPaintTrait(wcCvs.getContext('2d'), wcTrait);
+  }
+  function wcMove(e) {
+    if (!wcSpraying || !wcTrait) return;
+    const [x, y] = wcXY(e);
+    const p = wcTrait.p;
+    const lx = p[p.length - 2], ly = p[p.length - 1];
+    if (Math.hypot(x - lx, y - ly) < 6) return; // évite d'empiler des points identiques
+    p.push(Math.round(x), Math.round(y));
+    const g = wcCvs.getContext('2d');
+    const seg = Math.hypot(x - lx, y - ly);
+    const steps = Math.max(1, Math.round(seg / 4));
+    const hex = WC_PALETTE[wcTrait.c].hex;
+    for (let s = 0; s <= steps; s++) {
+      const t = s / steps;
+      wcSpray(g, lx + (x - lx) * t, ly + (y - ly) * t, wcTrait.s, hex);
+    }
+    // coulure de temps en temps (game-feel Jet Set Radio)
+    if (Math.random() < 0.05) {
+      wcDrips.push({ x, y, vy: 0.3, life: 40 + Math.random() * 60, hex });
+      if (!wcRaf) wcRaf = requestAnimationFrame(wcDripLoop);
+    }
+  }
+  function wcUp() {
+    if (!wcTrait) { wcSpraying = false; return; }
+    wcSpraying = false;
+    wcTags = ajouterTrait(wcTags, wcTrait); // + plafond FIFO
+    sauverTags(wcTags);                     // persistance vectorielle légère
+    wcTrait = null;
+    wcAmb?.stop(); wcAmb = null;
+  }
+  function wcEfface() {
+    wcTags = [];
+    wcDrips = [];
+    sauverTags(wcTags);
+    wcRepaint();
+  }
+
+  // le mur des chiottes (re)paraît → on charge la trace et on repeint (D15 gigogne)
+  $effect(() => {
+    if (room === 'toilettes' && wcCvs) {
+      wcTags = chargerTags();
+      wcRepaint();
+      requestAnimationFrame(wcComputeWarp); // mesure le cadre une fois posé → projette
+    }
+  });
+  // recalcule la projection du tag quand la fenêtre change de taille
+  $effect(() => {
+    if (typeof window === 'undefined') return;
+    const on = () => { if (room === 'toilettes') wcComputeWarp(); };
+    window.addEventListener('resize', on);
+    return () => window.removeEventListener('resize', on);
+  });
+  // on quitte la pièce → couper le sifflement et l'anim des coulures
+  $effect(() => {
+    if (room !== 'toilettes') {
+      wcAmb?.stop(); wcAmb = null;
+      if (wcRaf) { cancelAnimationFrame(wcRaf); wcRaf = 0; }
+      closeWcSub();
+    }
+  });
+
+  // ===== TOILETTES v2 : lieu cadré + 2 interactions (urinoir = viser la mouche,
+  // lavabo = boire → dessaouler). Cinéma : cadre noir, images non étirées. =====
+  const WC_ON  = '/media/nightdrive/scenes/laride_wc_on_v1.webp';
+  const WC_OFF = '/media/nightdrive/scenes/laride_wc_off_v1.webp';
+  let wcLit2 = $state(true);       // néon (nouvel interrupteur du lieu cadré)
+  let wcSub  = $state(null);       // null | 'pee' | 'drink'
+  function openWcSub(k) { wcSub = k; if (k === 'pee') requestAnimationFrame(peeInit); }
+  function closeWcSub() {
+    if (peeRaf) { cancelAnimationFrame(peeRaf); peeRaf = 0; }
+    peeRun = false;
+    if (drinkRaf) { cancelAnimationFrame(drinkRaf); drinkRaf = 0; }
+    wcSub = null;
+  }
+
+  // --- MINI-JEU : viser la mouche de l'urinoir (le gag classique) ---
+  let peeCvs = $state(null), peeRaf = 0, peeRun = false;
+  let peeScore = $state(0), peeBladder = $state(100), peeDone = $state(null);
+  let peeAim = 0.5, peePeeing = false, peeFly = { x: 0.5, y: 0.55, dir: 1 };
+  function peeInit() {
+    peeScore = 0; peeBladder = 100; peeDone = null; peeAim = 0.5; peePeeing = false;
+    peeFly = { x: 0.5, y: 0.55, dir: 1 }; peeRun = true;
+    if (!peeRaf) peeRaf = requestAnimationFrame(peeStep);
+  }
+  function peeSet(e) { const w = peeCvs?.clientWidth || 1; peeAim = Math.min(1, Math.max(0, e.offsetX / w)); }
+  function peeDown(e) { if (peeDone) return; peePeeing = true; peeSet(e); }
+  function peeMove(e) { if (peePeeing) peeSet(e); }
+  function peeUp() { peePeeing = false; }
+  function peeRoundRect(g, x, y, w, h, r) {
+    g.beginPath(); g.moveTo(x + r, y);
+    g.arcTo(x + w, y, x + w, y + h, r); g.arcTo(x + w, y + h, x, y + h, r);
+    g.arcTo(x, y + h, x, y, r); g.arcTo(x, y, x + w, y, r); g.closePath();
+  }
+  function peeFinish(win) {
+    peeDone = win
+      ? 'MOUCHE ÉLIMINÉE ×5 — +1 CLASSE. Tu es la légende des chiottes de LA RIDE.'
+      : 'vessie vide, éclaboussures partout. la honte. (réessaie)';
+    peeRun = false;
+  }
+  function peeStep() {
+    if (!peeCvs || !peeRun) return;
+    const g = peeCvs.getContext('2d'), W = peeCvs.width, H = peeCvs.height;
+    // la mouche zigzague
+    peeFly.x += 0.006 * peeFly.dir * (0.6 + Math.random() * 0.8);
+    if (peeFly.x > 0.78) { peeFly.x = 0.78; peeFly.dir = -1; }
+    if (peeFly.x < 0.22) { peeFly.x = 0.22; peeFly.dir = 1; }
+    peeFly.y = 0.52 + 0.05 * Math.sin(Date.now() / 280);
+    g.clearRect(0, 0, W, H);
+    g.fillStyle = '#0c1512'; g.fillRect(0, 0, W, H);
+    // urinoir (faïence + creux)
+    g.fillStyle = '#d7d1c4'; peeRoundRect(g, W * 0.26, H * 0.16, W * 0.48, H * 0.66, 44); g.fill();
+    g.fillStyle = '#8f9a8e'; peeRoundRect(g, W * 0.33, H * 0.24, W * 0.34, H * 0.44, 30); g.fill();
+    g.fillStyle = '#2a332c'; peeRoundRect(g, W * 0.44, H * 0.6, W * 0.12, H * 0.05, 8); g.fill(); // bonde
+    const fx = peeFly.x * W, fy = peeFly.y * H;
+    if (!peeDone) {
+      g.fillStyle = '#141414'; g.beginPath(); g.ellipse(fx, fy, 7, 5, 0, 0, 7); g.fill();
+      g.fillStyle = 'rgba(255,255,255,0.55)';
+      g.beginPath(); g.ellipse(fx - 3, fy - 3, 3, 2, 0, 0, 7); g.ellipse(fx + 3, fy - 3, 3, 2, 0, 0, 7); g.fill();
+    }
+    if (peePeeing && peeBladder > 0 && !peeDone) {
+      const sx0 = W * 0.5, sy0 = H * 0.98, sx1 = peeAim * W, sy1 = peeFly.y * H;
+      g.strokeStyle = 'rgba(255,214,106,0.9)'; g.lineWidth = 6; g.lineCap = 'round';
+      g.beginPath(); g.moveTo(sx0, sy0); g.quadraticCurveTo((sx0 + sx1) / 2, sy0 - H * 0.2, sx1, sy1); g.stroke();
+      g.fillStyle = 'rgba(255,214,106,0.5)';
+      for (let i = 0; i < 6; i++) g.fillRect(sx1 + (Math.random() - 0.5) * 22, sy1 + (Math.random() - 0.5) * 16, 2, 2);
+      peeBladder = Math.max(0, peeBladder - 0.4);
+      if (Math.hypot(sx1 - fx, sy1 - fy) < 16) {
+        peeScore++; peeFly.x = 0.22 + Math.random() * 0.56;
+        if (peeScore >= 5) peeFinish(true);
+      }
+    }
+    if (peeBladder <= 0 && !peeDone) peeFinish(false);
+    if (peeRun) peeRaf = requestAnimationFrame(peeStep);
+  }
+
+  // --- LAVABO : maintenir pour boire → ivresse/défonce redescendent ---
+  let drinkRaf = 0;
+  function drinkStart() {
+    if (drinkRaf) return;
+    const tick = () => {
+      boire(0.9);
+      if (etat.ivresse <= 0 && etat.defonce <= 0) { drinkStop(); return; }
+      drinkRaf = requestAnimationFrame(tick);
+    };
+    drinkRaf = requestAnimationFrame(tick);
+  }
+  function drinkStop() { if (drinkRaf) { cancelAnimationFrame(drinkRaf); drinkRaf = 0; } }
+  // la tête du perso selon l'état (à générer par Vincent ; repli sur la base).
+  const ETAT_HEADS = {
+    sobre:   '/media/nightdrive/perso/etats/laride_sobre.webp',
+    defonce: '/media/nightdrive/perso/etats/laride_defonce.webp',
+    bourre:  '/media/nightdrive/perso/etats/laride_bourre.webp',
+  };
+  const etatKey = $derived(
+    (etat.ivresse < 15 && etat.defonce < 15) ? 'sobre'
+      : etat.ivresse >= etat.defonce ? 'bourre' : 'defonce'
+  );
+
   // le confessionnal : tes vocaux tournent en boucle tant qu'on écoute (D13 :
   // on prend l'antenne). Silence total si le fichier n'est pas déposé (050).
   $effect(() => {
     if (room !== 'confess') return;
     if (player.trackId) eject();
     const v = loop('zone_cathedrale_confessionnal', 0.85);
+    return () => v.stop();
+  });
+
+  // le vitrail : la boucle de SA dimension tourne tant qu'on y est (univers_dark / univers_ange,
+  // sons de Vincent — silence si absent, 050). S'arrête en redescendant (Échap).
+  $effect(() => {
+    if (!univers) return;
+    const v = loop(`univers_${univers}`, 0.38);
     return () => v.stop();
   });
 
@@ -766,7 +1095,7 @@
   });
   $effect(() => {
     const fullscreen = !!univers || cielOpen || room === 'confess';
-    duckAmbiance(player.playing || fullscreen);
+    duckAmbiance(player.playing || fullscreen || sermonOn); // pendant le sermon, l'église se fait murmure
   });
   $effect(() => () => { setAmbiance(null); rsBed(null); }); // démontage de la Destination : silence ([DEMO PMU reactsound] coupe aussi le bed Web Audio)
 
@@ -790,6 +1119,19 @@
     const pose = (k && P[k]) || P.idle || perso.src;
     if (Array.isArray(pose)) { const i = personaFrame[perso.id] ?? 0; return pose[Math.min(i, pose.length - 1)]; }
     return pose;
+  }
+  // niveau de lévitation ACTIF au rendu : pendant l'ENTRÉE state2, les 2 premières frames
+  // restent petites et à leur place (assise normale) ; le grossissement/décollage démarre à
+  // la 3e frame. Toujours actif pour blow2 / la pose tenue / state4.
+  function floatOn(perso) {
+    const lvl = floatState[perso.id]; if (!lvl) return 0;
+    const pose = personaPose[perso.id]; const fr = personaFrame[perso.id] ?? 0;
+    // ENTRÉE d'un palier : les 2 premières frames gardent la taille du palier PRÉCÉDENT,
+    // puis ça grossit/décolle à partir de la 3e frame.
+    if (pose === 'state2' && fr < 2) return 0;   // entrée lotus : reste au sol (petite, à sa place)
+    if (pose === 'state4' && fr < 2) return 2;   // entrée déesse : reste taille lotus, puis grandit
+    if (pose === 'state6' && fr < 2) return 4;   // entrée boule : reste taille Shiva, puis se dissout
+    return lvl;
   }
   // opts : { fps } séquence · { ms } pose figée temporisée · { hold } garde la dernière frame · { then } enchaîne
   function playPose(id, key, opts = {}) {
@@ -820,20 +1162,143 @@
   let rings = $state([]);     // ronds de fumée actifs
   let ringSeq = 0;
   const setSmoking = (id, v) => { smoking = { ...smoking, [id]: v }; };
+  // PALIERS D'ÉTAT de Stick (pattern du projet) : à N taffes → une anim qui se FIGE
+  // et devient sa pose PERSISTANTE dans la barque (il reste dans cet état). Frames à
+  // fournir dans stick.poses (state2, state4, …) → tant qu'absentes, taffe normale.
+  // Par perso ; SEUL Stick touche l'état joueur. Chaque perso garde son palier tenu.
+  let puffs = {}, held = {};
+  // niveau de lévitation TENU par perso (réactif) : 0 = posé · 2 = flotte (lotus) · 4 = flotte haut (déesse).
+  // piloté par les paliers ci-dessous ; reste vide tant que les frames state2/state4 ne sont pas déposées.
+  let floatState = $state({});
+  let ascension = $state(false);   // ÉVÉNEMENT plein écran (flash + onde) pendant la montée
+  let ascLevel = $state(4);        // 4 = Shiva · 6 = boule d'énergie (flash plus violent)
+  const PERSO_STATES = { stick: { 5: 'state2', 10: 'state4' }, myrtille: { 5: 'state2', 10: 'state4', 15: 'state6' } };
+  // Anim « fume DANS l'état flottant tenu » : elle taffe/exhale sans quitter la pose
+  // (frames qui partent ET reviennent sur la frame de lévitation → dernière frame = pose tenue).
+  const STATE_SMOKE = { state2: 'blow2', state4: 'blow4' };
+  // ====== JAUGE DE MAINTIEN (états spéciaux) : dès qu'elle lévite, une jauge se vide ;
+  //        chaque taffe la remplit à fond. À zéro → elle REDESCEND d'un cran (Shiva→lotus→sol). ======
+  let gauge = $state({});                       // id -> 0..1 (affichée tant que l'état spécial tient)
+  let gaugeTimer = null;
+  const GAUGE_MS = 10000, GAUGE_TICK = 100;     // vidage complet en ~10 s sans refumer
+  function armGauge(id) {                        // (re)remplit à fond + lance le tic si besoin
+    gauge = { ...gauge, [id]: 1 };
+    if (!gaugeTimer) gaugeTimer = setInterval(tickGauges, GAUGE_TICK);
+  }
+  function tickGauges() {
+    const g = { ...gauge }; const drop = [];
+    for (const id in g) {
+      if (!floatState[id]) { delete g[id]; continue; }
+      g[id] -= GAUGE_TICK / GAUGE_MS;
+      if (g[id] <= 0) { delete g[id]; drop.push(id); }
+    }
+    gauge = g;
+    for (const id of drop) demoteState(id);
+    if (!Object.keys(gauge).length) { clearInterval(gaugeTimer); gaugeTimer = null; }
+  }
+  function demoteState(id) {                      // jauge vide → un cran plus bas
+    clearPose(id);                                // stoppe l'idle (ping-pong forme finale, etc.)
+    const lvl = floatState[id];
+    if (lvl >= 6) {                               // boule d'énergie → Shiva (repart de 10 taffes)
+      floatState = { ...floatState, [id]: 4 };
+      puffs[id] = 10; held[id] = 'state4';
+      setPose(id, 'state4'); setFrame(id, 999);
+      armGauge(id);
+    } else if (lvl >= 4) {                        // Shiva → lotus (repart de 5 taffes)
+      floatState = { ...floatState, [id]: 2 };
+      puffs[id] = 5; held[id] = 'state2';
+      setPose(id, 'state2'); setFrame(id, 999);
+      armGauge(id);
+    } else {                                      // lotus → sol : retour idle
+      const f = { ...floatState }; delete f[id]; floatState = f;
+      puffs[id] = 0; held[id] = undefined; setSmoking(id, false);
+      setPose(id, undefined); setFrame(id, 0);
+    }
+  }
+  // ÉVÉNEMENT plein écran + bascule en Shiva : flash violet/onde de choc, puis la
+  // transformation state4 s'enclenche au pic du flash et se fige en déesse tenue.
+  function triggerAscension(id, key = 'state4', level = 4) {
+    if (p !== 'drive') return;
+    ascension = true; ascLevel = level;                // level → intensité du flash (6 = boule d'énergie, plus fort)
+    playSfx(`/media/nightdrive/sons/ascension${level >= 6 ? '6' : ''}.wav`); // silence si absent
+    setTimeout(() => {                                 // au pic du flash → la transformation se joue
+      held[id] = key;
+      floatState = { ...floatState, [id]: level };
+      armGauge(id);
+      const per = (SCENES[sceneTop]?.personnages ?? []).find((x) => x.id === id);
+      if (level >= 6 && per?.poses?.final6) {           // Shiva → se dissout, PUIS s'installe dans sa forme finale
+        playPose(id, key, { fps: 3 });                 // la transfo joue (jusqu'à l'orbe)
+        clearTimeout(poseTimers[id + '_final']);
+        poseTimers[id + '_final'] = setTimeout(() => finalRest(id), (per.poses[key].length) * (1000 / 3));
+      } else {
+        playPose(id, key, { fps: 3, hold: true });
+      }
+    }, level >= 6 ? 300 : 240);
+    setTimeout(() => { ascension = false; }, level >= 6 ? 1250 : 950);
+  }
+  // IDLE PING-PONG (réutilisable pour faire vivre un perso) : joue b→a→b→c→b… lentement.
+  // frames = [a, b, c] ; ordre des index = [1,0,1,2]. Une seule frame → statique.
+  function startPingpong(id, key, ms = 900) {
+    clearPose(id);
+    const per = (SCENES[sceneTop]?.personnages ?? []).find((x) => x.id === id);
+    const fr = per?.poses?.[key];
+    setPose(id, key);
+    if (!Array.isArray(fr) || fr.length < 2) { setFrame(id, 0); return; }
+    const order = [1, 0, 1, 2]; let k = 0; setFrame(id, Math.min(order[0], fr.length - 1));
+    seqTimers[id] = setInterval(() => { k = (k + 1) % order.length; setFrame(id, Math.min(order[k], fr.length - 1)); }, ms);
+  }
+  // BOUCLE CONTINUE (réutilisable) : joue 0→1→…→n-1→0… en avant, sans fin. 1 frame → statique.
+  function startLoop(id, key, ms = 120) {
+    clearPose(id);
+    const per = (SCENES[sceneTop]?.personnages ?? []).find((x) => x.id === id);
+    const fr = per?.poses?.[key];
+    setPose(id, key);
+    if (!Array.isArray(fr) || fr.length < 2) { setFrame(id, 0); return; }
+    let k = 0; setFrame(id, 0);
+    seqTimers[id] = setInterval(() => { k = (k + 1) % fr.length; setFrame(id, k); }, ms);
+  }
+  // FORME FINALE : au REPOS elle est STATIQUE (frame 0). Elle ne "bouge" que si on la sollicite.
+  const finalRest = (id) => { clearPose(id); setPose(id, 'final6'); setFrame(id, 0); };
+  // clic → joue les 10 frames UNE fois (l'énergie s'active), puis retour au repos.
+  function playFinalAnim(id) {
+    const per = (SCENES[sceneTop]?.personnages ?? []).find((x) => x.id === id);
+    const fr = per?.poses?.final6;
+    clearPose(id); setPose(id, 'final6'); setFrame(id, 0);
+    if (!Array.isArray(fr) || fr.length < 2) return;
+    let i = 0;
+    seqTimers[id] = setInterval(() => {
+      i++;
+      if (i >= fr.length) { clearInterval(seqTimers[id]); setFrame(id, 0); } // retour repos
+      else setFrame(id, i);
+    }, 90);
+  }
   function keepSmoking(id) {
     clearTimeout(poseTimers[id + '_smoke']);
-    poseTimers[id + '_smoke'] = setTimeout(() => { setSmoking(id, false); setPose(id, undefined); setFrame(id, 0); }, 20000);
+    poseTimers[id + '_smoke'] = setTimeout(() => {
+      setSmoking(id, false);
+      if (held[id] === 'state6') finalRest(id);  // forme finale : reste STATIQUE au repos
+      else if (held[id]) { setPose(id, held[id]); setFrame(id, 999); } // reste dans son état tenu
+      else { setPose(id, undefined); setFrame(id, 0); }
+    }, 20000);
   }
   function rollJoint(id) {
     rollAsk = false;
     playSfx(`/media/nightdrive/sons/roll_${id}.wav`);
-    playPose(id, 'roll', { fps: 3, then: 'smoke' }); // ~330 ms/frame → bien visible
     setSmoking(id, true);
     keepSmoking(id);
+    if (id === 'myrtille') {            // enchaîne : elle roule PUIS fume (anim riche) → détente tenue
+      playPose(id, 'roll', { fps: 3 });
+      setTimeout(() => { if (smoking[id]) playPose(id, 'ring', { fps: 3, then: 'smoke' }); }, 2500); // après le roll → elle souffle un ROND
+
+    } else {
+      playPose(id, 'roll', { fps: 3, then: 'smoke' }); // ~330 ms/frame → bien visible
+    }
+    if (id === 'stick') fumer(24); // SEUL le raver (le joueur) voit sa défonce monter
   }
   // clic sur un perso : si elle fume → elle souffle un rond
   function personaClick(perso) {
     if (p !== 'drive') return;
+    if (held[perso.id] === 'state6') { armGauge(perso.id); playFinalAnim(perso.id); return; } // forme finale : clic → joue l'anim énergie UNE fois
     if (smoking[perso.id]) blowRing(perso);
   }
   // UN SEUL rond qui MONTE de sa bouche jusqu'en haut en SE TRANSFORMANT à travers ses 6
@@ -841,10 +1306,42 @@
   // jamais deux frames superposées). Il sort quand elle crache (~1,1 s).
   function blowRing(perso) {
     playSfx('/media/nightdrive/sons/blow.wav');
-    // TOUTE l'anim de fumée (elle crache → le rond monte au coin → se dissipe) est PEINTE
-    // dans la séquence blow (8 frames). On joue juste la séquence, aucun rond codé.
-    playPose(perso.id, 'blow', { fps: 3, then: 'smoke' });
     keepSmoking(perso.id);
+    const id = perso.id;
+    if (id === 'stick') fumer(16);            // SEUL le raver (joueur) fait monter l'état global
+    puffs[id] = (puffs[id] ?? 0) + 1;
+    const key = PERSO_STATES[id]?.[puffs[id]];
+    if (key && perso.poses?.[key]) {          // palier atteint (frames présentes) → il TIENT le nouvel état
+      if (id === 'myrtille' && (key === 'state4' || key === 'state6')) {
+        const lvl = key === 'state6' ? 6 : 4;
+        if (key === 'state4' && perso.poses.charge4) {
+          // GRAND ÉVÉNEMENT : charge (aura qui monte) → flash → transformation Shiva tenue.
+          playPose(id, 'charge4', { fps: 3 });
+          clearTimeout(poseTimers[id + '_asc']);
+          poseTimers[id + '_asc'] = setTimeout(() => triggerAscension(id, key, lvl), 1900);
+        } else {
+          // BOULE D'ÉNERGIE : la dissolution est dans l'anim → event encore plus fort tout de suite.
+          triggerAscension(id, key, lvl);
+        }
+      } else {
+        playPose(id, key, { fps: 3, hold: true }); held[id] = key;
+        // Myrtille décolle à ses paliers (lotus puis déesse). Stick reste assis → pas de lévitation.
+        if (id === 'myrtille' && /^state[24]$/.test(key)) { floatState = { ...floatState, [id]: Number(key.slice(5)) }; armGauge(id); } // 2 → lévite (lotus) · 4 → lévite haut (déesse)
+      }
+    } else {
+      const floating = !!held[id] && /^state[246]$/.test(held[id]);
+      const inState = floating ? STATE_SMOKE[held[id]] : null;
+      if (inState && perso.poses?.[inState]) {  // elle TAFFE/EXHALE sans quitter l'état flottant → revient sur la pose tenue
+        playPose(id, inState, { fps: inState === 'blow4' ? 2 : 3, hold: true }); armGauge(id); // grâce (Shiva) = lent
+      } else if (held[id] === 'state6') {        // forme finale : reste STATIQUE (l'anim ne joue qu'au clic via personaClick)
+        armGauge(id); finalRest(id);
+      } else if (floating) {                    // pas d'anim « fume dans cet état » → reste figée sur sa pose tenue
+        setPose(id, held[id]); setFrame(id, 999); armGauge(id);
+      } else {                                  // taffe normale au sol : Myrtille ALTERNE rond de fumée / recrache (variété)
+        const anim = (id === 'myrtille' && perso.poses?.ring && puffs[id] % 2 === 1) ? 'ring' : 'blow';
+        playPose(id, anim, { fps: 3, then: held[id] ?? 'smoke' });
+      }
+    }
   }
   // ============ [PRÊTRE] perso vivant à humeur (cathédrale) — 060 §2 ============
   let priestMood = $state(null);    // null | 'joyeux' | 'vener' (mémorisé)
@@ -866,7 +1363,7 @@
       }, (a + Math.random() * (b - a)) * 1000);
     };
     schedule();
-    return () => { clearTimeout(t); clearTimeout(sermonTimer); priestPose = 'idle'; coinAsk = false; sermonOn = false; };
+    return () => { clearTimeout(t); clearTimeout(sermonTimer); stopSermonAudio(); priestPose = 'idle'; coinAsk = false; sermonOn = false; };
   });
 
   function giveCoin(yes) {
@@ -874,15 +1371,59 @@
     priestMood = yes ? 'joyeux' : 'vener';
     priestPose = 'idle';
     playSfx(`/media/nightdrive/sons/${yes ? 'piece' : 'refus'}.wav`);
+    // OUI → la pièce tombe, il se lance dans son sermon joyeux.
+    // NON → pas de sermon : il se vexe et BOUDE (boucle pretre_vener dans le hall),
+    //       et il reste dans cet état tant qu'on ne donne pas. Sa colère ne sort
+    //       qu'au pupitre (sermon vénère).
+    if (yes) setTimeout(() => playSermon('joyeux'), 650);
+    else setTimeout(() => { if (priestMood === 'vener' && sceneTop === 'cathedrale' && !room && !univers) playGrogne(); }, 900); // sa pique, une fois, sur le moment
   }
-  function playSermon() {
-    const mood = priestMood ?? 'joyeux';   // défaut joyeux tant qu'il n'a pas quémandé
+  // le sermon est un VRAI enregistrement (long) : tente .wav puis .mp3, la pose et
+  // les halos tiennent jusqu'à la fin du son ; aucun fichier → halo 6 s, silence (050).
+  let sermonAudio = null;
+  function stopSermonAudio() { if (sermonAudio) { try { sermonAudio.pause(); } catch (e) {} sermonAudio = null; } }
+  function playSermon(forceMood = null) {
+    const mood = forceMood ?? priestMood ?? 'joyeux';   // pièce : selon la réponse · pupitre : toujours joyeux
     priestPose = `sermon_${mood}`;
     sermonOn = true;
-    playSfx(`/media/nightdrive/sons/sermon_${mood}.wav`);
-    clearTimeout(sermonTimer);
-    sermonTimer = setTimeout(() => { sermonOn = false; priestPose = 'idle'; }, 6000);
+    clearTimeout(sermonTimer); stopSermonAudio();
+    const done = () => { sermonOn = false; priestPose = 'idle'; sermonAudio = null; };
+    const vol = mood === 'vener' ? 0.5 : 0.9; // le refus gueule déjà tout seul — on le tient en laisse
+    const tryPlay = (ext, fallback) => { const a = new Audio(`/media/nightdrive/sons/sermon_${mood}.${ext}`); a.volume = vol;
+      a.onended = done; a.onerror = fallback; sermonAudio = a; a.play().catch(() => {}); };
+    tryPlay('wav', () => tryPlay('mp3', () => { sermonAudio = null; sermonTimer = setTimeout(done, 6000); }));
   }
+  // LA PIQUE DU PRÊTRE : il râle UNE SEULE FOIS, au moment du refus de la pièce —
+  // jamais à l'entrée dans le hall, jamais en boucle. Revenir dans la cathédrale ne
+  // relance rien : seule l'ambiance de l'église accueille. Sa rancune ne survit
+  // qu'au pupitre (sermon vénère). Fichier : sons/pretre_vener.wav|mp3 (silence si absent).
+  let granAudio = null;
+  function stopGrogne() { if (granAudio) { try { granAudio.pause(); } catch (e) {} granAudio = null; } }
+  function playGrogne() {
+    stopGrogne();
+    let a = new Audio('/media/nightdrive/sons/pretre_vener.wav'); a.volume = 0.4;
+    a.onerror = () => { if (granAudio !== a) return; const b = new Audio('/media/nightdrive/sons/pretre_vener.mp3'); b.volume = 0.4; b.onerror = () => {}; granAudio = b; b.play().catch(() => {}); };
+    granAudio = a; a.play().catch(() => {});
+  }
+
+  // RÈGLE CINÉMA (Vincent 2026-07-09) : un son appartient à son espace. Le sermon
+  // retient son espace NATAL (hall si pièce donnée, salle du prêche si pupitre) ;
+  // dès qu'on n'y est plus — autre salle, retour au hall, autre scène, univers —
+  // il se tait net, et l'ambiance de la cathédrale (jamais coupée, juste duckée
+  // pendant qu'il parle) reprend toute sa place.
+  let sermonLoc = null, grognePrevLoc = null;
+  $effect(() => {
+    const loc = `${sceneTop}·${room ?? ''}·${univers ?? ''}`;
+    if (sermonOn) {
+      if (sermonLoc == null) sermonLoc = loc; // première observation = son espace natal
+      else if (loc !== sermonLoc) {
+        stopSermonAudio(); clearTimeout(sermonTimer); sermonOn = false; priestPose = 'idle'; sermonLoc = null;
+      }
+    } else sermonLoc = null;
+    // la pique aussi est spatiale : tout changement d'espace la coupe net
+    if (grognePrevLoc != null && loc !== grognePrevLoc) stopGrogne();
+    grognePrevLoc = loc;
+  });
   const hideImg = (e) => { e.currentTarget.style.visibility = 'hidden'; };
 
   // la radio joue → les perso qui ont une pose 'radio' s'y mettent (sauf s'ils roulent)
@@ -935,6 +1476,92 @@
     overlayState = { ...overlayState, [key]: keys[(keys.indexOf(cur) + 1) % keys.length] };
   }
 
+  // ============ LE JEU D'HABILLAGE DU VESTIAIRE (laride_vestiaire_habillage.md) ============
+  // Dress-up type Sims du raver alien : pile de calques PNG empilés dans la
+  // persoZone (option A CSS §4.1), pivot pieds, idle doux. On compose une tenue,
+  // elle se sauve légère (indices de slots, 1 clé localStorage §5). JOUABLE EN
+  // PLACEHOLDER : tant qu'un PNG manque, un aplat coloré étiqueté tient la place
+  // au même emplacement de calque — déposer le PNG le remplace sans changer de code.
+  let outfit = $state(loadOutfit());      // { bas, pieds, haut, coiffe } → clés de variantes
+  let duSwap = $state(0);                 // compteur → force le crossfade du calque au swap
+  let duReady = $state({});               // fichier PNG présent ? (sinon placeholder)
+  let duToast = $state(null);             // { slot, label } affiché brièvement au changement
+  let duToastN = 0;                       // jeton anti-course pour masquer le toast
+  // BANDES DU CORPS (fractions de la hauteur de la persoZone, haut→bas) : chaque cycler
+  // se pose sur la zone du corps concernée — coiffe→tête, haut→torse, bas→jambes, pieds→pieds.
+  const duBand = {
+    coiffe: [0.00, 0.20],
+    haut:   [0.20, 0.50],
+    bas:    [0.50, 0.80],
+    pieds:  [0.80, 1.00],
+  };
+  // précharge / sonde d'existence des PNG (base + variantes) : présent → vrai calque,
+  // absent → placeholder. Ne casse rien, se met à jour tout seul si Vincent dépose.
+  onMount(() => {
+    for (const src of DU_FILES) {
+      const im = new Image();
+      im.onload = () => { duReady = { ...duReady, [src]: true }; };
+      im.src = src;
+    }
+  });
+  // La liste ORDONNÉE des choix d'un slot (inclut 'rien' en tête si optionnel §1.1).
+  // → le cycler défile dessus, scalable à n'importe quel nombre de variantes (§7.5).
+  function duChoices(slot) {
+    const keys = slot.variants.map((v) => v.key);
+    return slot.optional ? [null, ...keys] : keys;
+  }
+  // affiche le nom de la pièce brièvement (petit toast, §1.2)
+  function duFlash(slotKey, variantKey) {
+    const slot = DU_SLOTS.find((s) => s.key === slotKey);
+    const label = variantKey ? (variantOf(slotKey, variantKey)?.label ?? '') : 'rien';
+    const n = ++duToastN;
+    duToast = { slot: slotKey, label };
+    setTimeout(() => { if (duToastN === n) duToast = null; }, 1200);
+  }
+  // CYCLER : slot suivant/précédent (dir = +1 / -1). Boucle circulaire (§7.5).
+  // Sert aux chevrons ◀▶, au clic/swipe sur la zone du corps.
+  function duCycle(slotKey, dir) {
+    if (p !== 'drive') return;
+    const slot = DU_SLOTS.find((s) => s.key === slotKey);
+    if (!slot) return;
+    const choices = duChoices(slot);
+    const cur = choices.indexOf(outfit[slotKey] ?? null);
+    const next = choices[((cur < 0 ? 0 : cur) + dir + choices.length) % choices.length];
+    outfit = { ...outfit, [slotKey]: next };
+    duSwap++;
+    duFlash(slotKey, next);
+    saveOutfit(outfit);
+    zoneSfx('laride', 'vestiaire_swap'); // silence si absent (050)
+  }
+  // SWIPE sur une zone du corps : swipe horizontal → cycle ; tap → suivant (§1.2)
+  let duTouch = null; // { slot, x, y }
+  function duTouchStart(slotKey, e) {
+    const t = e.changedTouches ? e.changedTouches[0] : e;
+    duTouch = { slot: slotKey, x: t.clientX, y: t.clientY };
+  }
+  function duTouchEnd(slotKey, e) {
+    if (!duTouch || duTouch.slot !== slotKey) { duTouch = null; return; }
+    const t = e.changedTouches ? e.changedTouches[0] : e;
+    const dx = t.clientX - duTouch.x, dy = t.clientY - duTouch.y;
+    duTouch = null;
+    if (Math.abs(dx) > 28 && Math.abs(dx) > Math.abs(dy)) duCycle(slotKey, dx < 0 ? 1 : -1);
+    else duCycle(slotKey, 1); // simple tap = variante suivante
+  }
+  function duRandom() {
+    if (p !== 'drive') return;
+    outfit = randomOutfit();
+    duSwap++;
+    saveOutfit(outfit);
+    zoneSfx('laride', 'vestiaire_swap');
+  }
+  function duReset() {
+    if (p !== 'drive') return;
+    outfit = defaultOutfit();
+    duSwap++;
+    saveOutfit(outfit);
+    zoneSfx('laride', 'vestiaire_reset');
+  }
+
   // une zone, ses destins : sortie → goto (si les images sont là) → open → lueur
   function zoneClick(z) {
     if (p !== 'drive') return;
@@ -942,8 +1569,11 @@
     const ov = (SCENES[sceneTop]?.overlays ?? []).find((o) => o.zone === z.id);
     if (ov) toggleOverlay(sceneTop, ov);
     // [PRÊTRE] le pupitre → sermon selon l'humeur mémorisée (le halo suit)
-    if (sceneTop === 'cathedrale' && priest && z.id === priest.sermonZone) playSermon();
+    if (sceneTop === 'cathedrale' && priest && z.id === priest.sermonZone) playSermon(); // le pupitre parle selon SON humeur : joyeux par défaut, vénère tant que la pièce lui a été refusée
     if (z.exit) { popScene(); return; }
+    // le VESTIAIRE de LA RIDE (gigogne D15) : son franc d'entrée en plus du
+    // `porte_vestiaire` générique du passage (silence si absent, 050).
+    if (sceneTop === 'laride' && z.id === 'vestiaire') zoneSfx('laride', 'vestiaire');
     if (z.goto && sceneReady[z.goto]) { pushScene(z); return; }
     if (z.open?.type === 'arcade') { arcadeOpen = true; return; }
     if (z.open?.type === 'mantra') { sayMantra(); if (sceneTop === 'pmu') rsHit('zone_pmu_terminal', { pan: rsPan(z) }); else zoneSfx('pmu', 'terminal'); return; } // [DEMO PMU reactsound]
@@ -966,11 +1596,13 @@
   // au-dessus = plongée dans la porte (scale, origine = la porte cliquée)
   const pcStyle = $derived(
     inScene
-      ? `transform-origin:${stack[0].ox ?? 50}% ${stack[0].oy ?? 50}%; transform: scale(2.3);`
-      : `transform-origin:${hoverOx}% ${hoverOy}%;
-         transition: transform ${hovering ? 7000 : 800}ms ${hovering ? 'cubic-bezier(.42,.03,.62,.2)' : 'ease-out'} ${hovering ? 380 : 0}ms, filter ${hovering ? 7000 : 800}ms ease-out ${hovering ? 380 : 0}ms;
-         transform: translate(${hovering ? '0px, 0px' : `${(-lookX * 9).toFixed(1)}px, ${(-lookY * 4).toFixed(1)}px`}) scale(${hovering ? 1.17 : 1});
-         filter: brightness(${hovering ? 1.04 : 1});`
+      ? (stack[1]?.id === 'barque'
+          // le zoom vers la barque : le seul gardé (plongée dans la porte)
+          ? `transform-origin:${stack[0].ox ?? 50}% ${stack[0].oy ?? 50}%; transition: transform 1200ms ease-out; transform: scale(2.3);`
+          // toute autre destination : PAS de zoom (la scène apparaît en fondu, sans plongée)
+          : `transform: none;`)
+      // habitacle au repos : léger parallaxe du regard, AUCUN zoom au survol
+      : `transform-origin:${hoverOx}% ${hoverOy}%; transition: transform 1200ms ease-out; transform: translate(${(-lookX * 9).toFixed(1)}px, ${(-lookY * 4).toFixed(1)}px);`
   );
 
   function onKey(e) {
@@ -1013,6 +1645,26 @@
     <!-- crépuscule : la lumière du bureau change avant que rien ne bouge -->
     <div class="tint"></div>
 
+    <!-- INDICATEUR D'ÉTAT retiré à la demande de Vincent (2026-07-09) — l'état
+         (etatKey/ETAT_HEADS) vit toujours, utilisé par le verre du bar. -->
+
+    <!-- PORTRAIT MYRTILLE + JAUGE DE MAINTIEN : même cadre que Stick (l'indicateur d'état
+         à gauche EST Stick), posé juste à côté. Photo illuminée + jauge pleine quand elle
+         tient un état spécial (lotus = violet · Shiva = or). -->
+    {#if p === 'drive' && sceneTop === 'barque'}
+      <div class="lev-cell" class:on={!!floatState.myrtille}>
+        <div class="lev-frame lvl{floatState.myrtille ?? 0}">
+          {#key floatState.myrtille ?? 0}
+            <img src="/media/nightdrive/scenes/perso/myrtille_face_{floatState.myrtille ?? 0}.webp" alt="Myrtille" draggable="false" transition:fade={{ duration: 320 }} />
+          {/key}
+        </div>
+        <div class="statejauge lvl{floatState.myrtille ?? 2}" class:low={!!floatState.myrtille && (gauge.myrtille ?? 0) < 0.3} class:idle={!floatState.myrtille}>
+          <i style="width:{Math.max(0, (gauge.myrtille ?? 0)) * 100}%"></i>
+        </div>
+        <span class="lev-lbl">{floatState.myrtille === 6 ? 'énergie' : floatState.myrtille === 4 ? 'déesse' : floatState.myrtille === 2 ? 'défoncée' : 'sobre'}</span>
+      </div>
+    {/if}
+
     <!-- ============ LE MONDE (à travers le pare-brise) ============ -->
     <div class="world">
       {#if paintCity}
@@ -1052,10 +1704,10 @@
           <span class="m-glass"><canvas class="mpx" bind:this={mcvs}></canvas></span>
           <div class="m-lcd"><div class="scroll"><span>{lcdLine}</span><span>{lcdLine}</span></div></div>
           <span class="m-transport">
-            <button disabled={!canPrev} onclick={() => step(-1)} title="son précédent">⏮</button>
+            <button disabled={!canPrev} onclick={() => arStep(-1)} title="son précédent">⏮</button>
             <button disabled={!engaged} onclick={toggle} title={player.playing ? 'pause' : 'lecture'}>{player.playing ? '⏸' : '▶'}</button>
-            <button disabled={!canNext} onclick={() => step(1)} title="son suivant">⏭</button>
-            <button disabled={!engaged} onclick={eject} title="rendre l'antenne">⏏</button>
+            <button disabled={!canNext} onclick={() => arStep(1)} title="son suivant">⏭</button>
+            <button disabled={!engaged} onclick={arEject} title="rendre l'antenne">⏏</button>
           </span>
           <span class="m-presets">
             {#each Array(6) as _, i}
@@ -1081,14 +1733,14 @@
              vers la porte cliquée). Échap dépile — la porte recule. -->
         {#each stack.slice(1) as s, i (i + '·' + s.id)}
           {@const sc = SCENES[s.id]}
-          {@const below = i < stack.length - 2}
           <div
             class="sc"
-            style="transform-origin:{below ? `${s.ox ?? 50}% ${s.oy ?? 50}%` : `${zHoverOx}% ${zHoverOy}%`}; {below ? '' : `transition: transform ${zHovering ? 7000 : 800}ms ${zHovering ? 'cubic-bezier(.42,.03,.62,.2)' : 'ease-out'} ${zHovering ? 380 : 0}ms, filter ${zHovering ? 7000 : 800}ms ease-out ${zHovering ? 380 : 0}ms; filter: brightness(${zHovering ? 1.04 : 1});`} transform: scale({below ? 2.3 : zHovering ? 1.17 : 1});"
             transition:arrive
           >
             <img class="pc-off" src={sc.off} alt="" draggable="false" />
-            <img class="pc-breath" src={sc.on} alt="" draggable="false" />
+            {#if sc.breath !== false}
+              <img class="pc-breath" src={sc.on} alt="" draggable="false" />
+            {/if}
             <!-- [COLLAGE] calques d'état des objets (peints, transparents, plein cadre) :
                  au-dessus du fond, sous les perso. off = aucun calque. -->
             {#if sc.overlays}
@@ -1121,7 +1773,7 @@
                   <!-- ombre-plancher (sous le perso) : réagit à la lévitation -->
                   <div class="perso-shadow" class:sh-levit={perso.anim === 'levit'} style="left:{perso.shadow.x}%; top:{perso.shadow.y}%; width:{perso.shadow.w}%; height:{perso.shadow.h}%;"></div>
                 {/if}
-                <div class="perso perso-{perso.anim}" class:solo={!!(perso.src || perso.poses)} class:smokeable={smoking[perso.id]} role="button" tabindex="-1" onclick={() => personaClick(perso)} style="left:{perso.x}%; top:{perso.y}%; width:{perso.w}%; height:{perso.h}%;">
+                <div class="perso perso-{perso.anim}" class:solo={!!(perso.src || perso.poses)} class:smokeable={smoking[perso.id]} class:perso-float2={floatOn(perso) === 2} class:perso-float4={floatOn(perso) === 4} class:perso-float6={floatOn(perso) === 6} role="button" tabindex="-1" onclick={() => personaClick(perso)} style="left:{perso.x}%; top:{perso.y}%; width:{perso.w}%; height:{perso.h}%;">
                   {#if perso.poses}
                     <!-- les FRAMES d'une séquence restent crisp (src qui change) ; le CHANGEMENT
                          DE POSE fait un fondu → la fumée de la dernière frame se DISSIPE en
@@ -1137,6 +1789,74 @@
                   {/if}
                 </div>
               {/each}
+            {/if}
+            <!-- ÉVÉNEMENT PLEIN ÉCRAN (montée en Shiva) : flash violet + onde de choc radiale. -->
+            {#if ascension}
+              <div class="ascension" class:lvl6={ascLevel >= 6}>
+                <div class="asc-flash"></div>
+                <div class="asc-ring"></div>
+                {#if ascLevel >= 6}<div class="asc-ring r2"></div>{/if}
+              </div>
+            {/if}
+            <!-- ============ LE JEU D'HABILLAGE (le vestiaire, gigogne D15) ============
+                 pile de calques PNG empilés dans la persoZone (option A §4.1),
+                 pivot pieds, idle doux ; à côté, l'UI (onglets + rail de vignettes
+                 + SURPRENDS-MOI + reset). Jouable EN PLACEHOLDER : PNG absent →
+                 aplat coloré étiqueté au même emplacement de calque. -->
+            {#if s.id === 'vestiaire' && sc.persoZone}
+              {@const pz = sc.persoZone}
+              <!-- LE PERSO PLEIN CADRE (pivot pieds §2.1), entièrement visible tête→pieds.
+                   Chaque calque garde son ratio 2:3 (object-fit:contain), crossfade au swap. -->
+              <div class="du-perso perso-lean" style="left:{pz.x}%; top:{pz.y}%; width:{pz.w}%; height:{pz.h}%;">
+                <!-- z=0 : la base, toujours là -->
+                {#if duReady[DU_BASE.src]}
+                  <img class="du-layer" style="z-index:0;" src={DU_BASE.src} alt="" draggable="false" />
+                {:else}
+                  <div class="du-ph du-ph-base" style="z-index:0;"><span>{DU_BASE.label}</span></div>
+                {/if}
+                <!-- les 4 slots : chacun son calque (crossfade ~150ms via {#key}), 'rien' = vide -->
+                {#each DU_SLOTS as slot (slot.key)}
+                  {@const vk = outfit[slot.key]}
+                  {#key vk}
+                    {#if vk}
+                      {@const src = variantSrc(slot.key, vk)}
+                      {@const v = variantOf(slot.key, vk)}
+                      {#if duReady[src]}
+                        <img class="du-layer" style="z-index:{slot.z};" src={src} alt="" draggable="false" transition:fade={{ duration: 150 }} />
+                      {:else}
+                        <div class="du-ph du-ph-{slot.key}" style="z-index:{slot.z}; --phc:{v?.color};" transition:fade={{ duration: 150 }}><span>{v?.label}</span></div>
+                      {/if}
+                    {/if}
+                  {/key}
+                {/each}
+              </div>
+
+              <!-- LES CYCLERS PAR ZONE DU CORPS (§1.2) : posés SUR la persoZone, chacun
+                   à hauteur de sa partie du corps. Bande cliquable/swipe au centre +
+                   chevrons ◀▶ semi-transparents de part et d'autre. Généré depuis SLOTS
+                   → scalable à n'importe quel nombre de variantes. -->
+              {#each DU_SLOTS as slot (slot.key)}
+                <div class="du-cycler du-cycler-{slot.key}"
+                     style="left:{pz.x}%; width:{pz.w}%; top:{pz.y + pz.h * duBand[slot.key][0]}%; height:{pz.h * (duBand[slot.key][1] - duBand[slot.key][0])}%;">
+                  <button class="du-chev du-chev-l" aria-label="{slot.label} précédent" onclick={() => duCycle(slot.key, -1)}>‹</button>
+                  <!-- la zone du corps : tap = suivant, swipe = cycle -->
+                  <button class="du-hit" aria-label="changer {slot.label}"
+                          onclick={() => duCycle(slot.key, 1)}
+                          ontouchstart={(e) => duTouchStart(slot.key, e)}
+                          ontouchend={(e) => duTouchEnd(slot.key, e)}></button>
+                  <button class="du-chev du-chev-r" aria-label="{slot.label} suivant" onclick={() => duCycle(slot.key, 1)}>›</button>
+                  <!-- le nom de la pièce, brièvement -->
+                  {#if duToast && duToast.slot === slot.key}
+                    <span class="du-name" transition:fade={{ duration: 140 }}>{duToast.label}</span>
+                  {/if}
+                </div>
+              {/each}
+
+              <!-- COMMANDES COMPACTES (§1.3) : 🎲 surprends-moi + ↺ reset, discrets, en coin -->
+              <div class="du-corner">
+                <button class="du-mini du-surprise" onclick={duRandom} title="surprends-moi" aria-label="surprends-moi">🎲</button>
+                <button class="du-mini du-reset" onclick={duReset} title="reset" aria-label="reset">↺</button>
+              </div>
             {/if}
             <!-- RONDS DE FUMÉE : montent et sortent par le haut (placeholder CSS,
                  remplacé par les frames noir de Vincent en 'screen' à réception). -->
@@ -1176,9 +1896,10 @@
             {#each sc.zones as z (z.id)}
               <button
                 class="lieu"
-                class:fondu={!z.lum && !z.light}
+                class:fondu={!z.lum && !z.light && !z.soft}
                 class:zlight={z.light}
                 class:halo={!!z.aura}
+                class:soft={z.soft}
                 class:pulse={lieuPulse === z.id}
                 style="left:{z.x}%; top:{z.y}%; width:{z.w}%; height:{z.h}%;
                        {z.boost ? `--boost:${z.boost};` : ''}
@@ -1400,26 +2121,14 @@
         <!-- ============ LES PARIS SPORTIFS (la télé du PMU) ============ -->
         {#if room === 'paris'}
           <div class="nd-room" style="--ac:var(--v2000-vert-pmu); --acglow:rgba(74,208,160,0.3)">
-            <div class="nd-panel">
+            <div class="nd-panel pmu-panel">
               <div class="nd-head">
-                <span class="nd-title">{PARIS.chaine}</span>
-                <span class="nd-sub">— en direct du comptoir —</span>
+                <span class="nd-title">PARIS — LA TÉLÉ DU PMU</span>
+                <span class="nd-sub">— tiercé de nuit en direct —</span>
                 <button class="nd-close" onclick={closeRoom} title="éteindre (Échap)">✕</button>
               </div>
-              <div class="paris-tv">
-                <ul class="paris-list">
-                  {#each PARIS.matchs as m (m.a + m.b)}
-                    <li>
-                      <span class="ph">{m.h}</span>
-                      <span class="pteam">{m.a} <b>{m.coteA}</b></span>
-                      <span class="pvs">vs</span>
-                      <span class="pteam">{m.b} <b>{m.coteB}</b></span>
-                    </li>
-                  {/each}
-                </ul>
-                <div class="paris-band"><span>{PARIS.bandeau}{PARIS.bandeau}</span></div>
-              </div>
-              <div class="nd-foot">ÉCRAN DE DÉMO · le vrai jeu viendra · Échap</div>
+              <PmuCourse />
+              <div class="nd-foot">mise tes jetons sur un partant · Échap pour éteindre</div>
             </div>
           </div>
         {/if}
@@ -1538,17 +2247,68 @@
           </div>
         {/if}
 
-        <!-- ============ LES TOILETTES (le lieu à sound design de LA RIDE) ============ -->
+        <!-- ============ LES TOILETTES (lieu cadré + urinoir/lavabo interactifs) ============ -->
         {#if room === 'toilettes'}
-          <div class="wc-room" role="dialog" aria-label="les toilettes">
-            <div class="wc-wall">
-              <p class="wc-graff g1">VINCENT 2000 ÉTAIT LÀ</p>
-              <p class="wc-graff g2">pour un bon son, demande au zinc</p>
-              <p class="wc-graff g3">♡ + ✝</p>
-              <p class="wc-graff g4">la nuit appartient à ceux qui écoutent</p>
-              <p class="wc-graff g5">93.00 FM</p>
+          <div class="wc-room" role="dialog" aria-label="les toilettes de la ride">
+            <div class="cine">
+              <div class="cine-stage" style="background-image:url({WC_OFF})">
+                <div class="hotwrap hw-urinal">
+                  <button class="hot" style="background-image:url({WC_ON}); background-size:909% 455%; background-position:67.4% 51.3%;" onclick={() => openWcSub('pee')} aria-label="pisser"></button>
+                  <span class="hot-cap">pisser</span>
+                </div>
+                <div class="hotwrap hw-sink">
+                  <button class="hot" style="background-image:url({WC_ON}); background-size:571% 400%; background-position:87.9% 72%;" onclick={() => openWcSub('drink')} aria-label="boire"></button>
+                  <span class="hot-cap">boire</span>
+                </div>
+                <div class="hotwrap hw-door">
+                  <button class="hot" style="background-image:url({WC_ON}); background-size:833% 250%; background-position:45.45% 40%;" onclick={closeRoom} aria-label="sortir"></button>
+                  <span class="hot-cap">sortir</span>
+                </div>
+                <div class="wc-door" aria-hidden="true"></div>
+                <div class="wc-scan" aria-hidden="true"></div>
+              </div>
             </div>
-            <span class="wc-hint">un lieu à sound design — le son viendra · Échap</span>
+            <span class="wc-hint">clique l'urinoir ou le lavabo · Échap pour ressortir</span>
+
+            {#if wcSub === 'pee'}
+              <div class="sub-panel" role="dialog" aria-label="viser la mouche">
+                <div class="sub-box">
+                  <span class="sub-title">VISE LA MOUCHE — maintiens et dirige le jet</span>
+                  <canvas class="pee-cvs" width="480" height="360" bind:this={peeCvs}
+                    onpointerdown={peeDown} onpointermove={peeMove} onpointerup={peeUp} onpointerleave={peeUp}></canvas>
+                  <div class="sub-hud">
+                    <span>vessie <b style="--w:{peeBladder}%; --c:#ffd76a"></b></span>
+                    <span>mouches {peeScore}/5</span>
+                  </div>
+                  {#if peeDone}<div class="sub-verdict">{peeDone}</div>{/if}
+                  <div class="sub-actions">
+                    {#if peeDone}<button class="sub-again" onclick={peeInit}>recommencer</button>{/if}
+                    <button class="sub-close" onclick={closeWcSub}>✕ sortir</button>
+                  </div>
+                </div>
+              </div>
+            {/if}
+
+            {#if wcSub === 'drink'}
+              <div class="sub-panel" role="dialog" aria-label="boire de l'eau">
+                <div class="sub-box drink-box">
+                  <span class="sub-title">LE LAVABO — bois pour reprendre tes esprits</span>
+                  <div class="drink-perso" style="--wob:{Math.min(1, (etat.ivresse + etat.defonce) / 120)}">
+                    <img src={ETAT_HEADS[etatKey]} onerror={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = '/media/nightdrive/perso/dressup/base_h.webp?v=2'; }} alt="" class="drink-img" draggable="false" />
+                  </div>
+                  <div class="sub-hud col">
+                    <span>ivresse <b style="--w:{etat.ivresse}%; --c:#ff3a5e"></b></span>
+                    <span>défonce <b style="--w:{etat.defonce}%; --c:#4ad0a0"></b></span>
+                  </div>
+                  {#if etat.ivresse <= 0 && etat.defonce <= 0}
+                    <div class="sub-verdict">t'as repris tes esprits. la nuit peut continuer.</div>
+                  {:else}
+                    <button class="drink-btn" onpointerdown={drinkStart} onpointerup={drinkStop} onpointerleave={drinkStop}>maintenir pour boire</button>
+                  {/if}
+                  <button class="sub-close" onclick={closeWcSub}>✕ sortir</button>
+                </div>
+              </div>
+            {/if}
           </div>
         {/if}
 
@@ -1810,10 +2570,10 @@
         <!-- l'autoradio : afficheur + commandes posés sur la façade peinte -->
         <div class="m-lcd"><div class="scroll"><span>{lcdLine}</span><span>{lcdLine}</span></div></div>
         <span class="m-transport">
-          <button disabled={!canPrev} onclick={() => step(-1)} title="son précédent">⏮</button>
+          <button disabled={!canPrev} onclick={() => arStep(-1)} title="son précédent">⏮</button>
           <button disabled={!engaged} onclick={toggle} title={player.playing ? 'pause' : 'lecture'}>{player.playing ? '⏸' : '▶'}</button>
-          <button disabled={!canNext} onclick={() => step(1)} title="son suivant">⏭</button>
-          <button disabled={!engaged} onclick={eject} title="rendre l'antenne">⏏</button>
+          <button disabled={!canNext} onclick={() => arStep(1)} title="son suivant">⏭</button>
+          <button disabled={!engaged} onclick={arEject} title="rendre l'antenne">⏏</button>
         </span>
         <span class="m-presets">
           {#each Array(6) as _, i}
@@ -1889,12 +2649,12 @@
               {/each}
             </span>
             <span class="transport">
-              <button disabled={!canPrev} onclick={() => step(-1)} title="son précédent">⏮</button>
+              <button disabled={!canPrev} onclick={() => arStep(-1)} title="son précédent">⏮</button>
               <button class="play" disabled={!engaged} onclick={toggle} title={player.playing ? 'pause' : 'lecture'}>
                 {player.playing ? '⏸' : '▶'}
               </button>
-              <button disabled={!canNext} onclick={() => step(1)} title="son suivant">⏭</button>
-              <button class="ej" disabled={!engaged} onclick={eject} title="rendre l'antenne">⏏</button>
+              <button disabled={!canNext} onclick={() => arStep(1)} title="son suivant">⏭</button>
+              <button class="ej" disabled={!engaged} onclick={arEject} title="rendre l'antenne">⏏</button>
             </span>
             <span class="brandtx">V2000<em>TX</em></span>
           </div>
@@ -2038,6 +2798,10 @@
     height: 102%;
     left: -1%;
     top: -1%;
+    /* toujours un contexte d'empilement : sans ça, quand une scène est ouverte avec
+       `transform:none`, les éléments lumineux de l'habitacle (z-index) passaient
+       AU-DESSUS de la scène (transparence du tableau de bord vue dans l'église, It38) */
+    isolation: isolate;
     transition: transform 1150ms cubic-bezier(0.32, 0.04, 0.14, 1);
   }
   .pc-off, .pc-breath {
@@ -2938,6 +3702,14 @@
       drop-shadow(0 0 7px var(--aura-a))
       drop-shadow(0 0 22px var(--aura-b));
   }
+  /* zones DOUCES (objets ronds/petits : pizza, sachet) : le survol n'affiche pas un
+     bloc → masque radial centré + blend screen (les bords sombres du crop
+     disparaissent, seul le cœur de l'objet s'allume). */
+  .lieu.soft {
+    mix-blend-mode: screen;
+    -webkit-mask-image: radial-gradient(58% 58% at 50% 50%, #000 26%, rgba(0,0,0,0.4) 58%, transparent 80%);
+            mask-image: radial-gradient(58% 58% at 50% 50%, #000 26%, rgba(0,0,0,0.4) 58%, transparent 80%);
+  }
   .lieu { transition: opacity 650ms cubic-bezier(0.3, 0.05, 0.2, 1), filter 650ms ease; }
   /* clic sur un lieu pas encore branché : il répond d'une lueur, sa porte viendra */
   .lieu.pulse { animation: lieu-pulse 900ms ease; }
@@ -3772,6 +4544,7 @@
     animation: arc-in 420ms cubic-bezier(0.2, 0.7, 0.3, 1);
     z-index: 5;
   }
+  .pmu-panel { width: min(1120px, 96vw) !important; }
   .nd-panel {
     width: min(560px, 90vw);
     background: linear-gradient(180deg, #141018 0%, #0a0810 100%);
@@ -4033,21 +4806,222 @@
   /* ---- LES TOILETTES ---- */
   .wc-room {
     position: absolute; inset: 0; z-index: 6;
-    background:
-      repeating-linear-gradient(90deg, rgba(0,0,0,0.18) 0 38px, transparent 38px 40px),
-      repeating-linear-gradient(0deg, rgba(0,0,0,0.18) 0 38px, transparent 38px 40px),
-      linear-gradient(180deg, #17252a 0%, #0c1518 100%);
-    display: flex; align-items: center; justify-content: center;
-    animation: arc-in 420ms ease;
+    background: #000;                    /* cadre noir cinéma : l'image n'est pas étirée */
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 12px; animation: arc-in 420ms ease;
   }
-  .wc-wall { position: relative; width: min(520px, 84vw); height: 300px; }
-  .wc-graff { position: absolute; margin: 0; font-style: italic; text-shadow: 0 0 4px rgba(0,0,0,0.6); }
-  .wc-graff.g1 { top: 12%; left: 8%; color: #ff5aa0; font-size: 18px; transform: rotate(-4deg); letter-spacing: 0.05em; }
-  .wc-graff.g2 { top: 40%; left: 40%; color: #6ae0c0; font-size: 12px; transform: rotate(2deg); }
-  .wc-graff.g3 { top: 26%; right: 12%; color: #ffd24a; font-size: 22px; transform: rotate(6deg); }
-  .wc-graff.g4 { bottom: 22%; left: 12%; color: #b0a0ff; font-size: 13px; transform: rotate(-2deg); }
-  .wc-graff.g5 { bottom: 34%; right: 16%; color: #ff8a3a; font-size: 15px; transform: rotate(3deg); letter-spacing: 0.1em; }
-  .wc-hint { position: absolute; bottom: 4%; left: 50%; transform: translateX(-50%); color: rgba(180,210,205,0.4); font-size: 9px; letter-spacing: 0.22em; }
+  .wc-frame {
+    position: relative; width: min(880px, 92vw); aspect-ratio: 3 / 2;
+    overflow: hidden;
+    border: 2px solid rgba(74,208,160,0.18);
+    box-shadow: 0 0 0 6px rgba(0,0,0,0.5), 0 10px 40px rgba(0,0,0,0.6);
+    background: #05070a;
+  }
+  .wc-bg {
+    position: absolute; inset: 0; width: 100%; height: 100%;
+    object-fit: cover; user-select: none; -webkit-user-drag: none;
+  }
+  .wc-switch {
+    position: absolute; top: 8px; right: 10px; z-index: 3;
+    width: 26px; height: 26px; border-radius: 3px; cursor: pointer;
+    background: rgba(12,18,15,0.72); border: 1px solid rgba(180,108,255,0.45);
+    color: #ffd76a; font-size: 14px; line-height: 1;
+  }
+  .wc-switch:hover { background: rgba(180,108,255,0.22); }
+  .wc-cvs {
+    position: absolute; inset: 0; z-index: 2;
+    display: block; width: 100%; height: 100%; cursor: crosshair;
+    image-rendering: pixelated; touch-action: none;
+    background: transparent; /* le mur (image) est dessous ; le canvas ne porte que les tags */
+  }
+  .wc-scan {
+    position: absolute; inset: 0; pointer-events: none;
+    background: repeating-linear-gradient(0deg, rgba(0,0,0,0.14) 0 2px, transparent 2px 4px);
+    mix-blend-mode: multiply; opacity: 0.5;
+  }
+  .wc-bombe {
+    display: flex; align-items: center; gap: 12px; flex-wrap: wrap; justify-content: center;
+    padding: 6px 12px; border: 1px solid rgba(180,108,255,0.28);
+    background: rgba(12,18,15,0.6); border-radius: 3px;
+  }
+  .wc-bombe-lbl { color: rgba(180,108,255,0.7); font-size: 9px; letter-spacing: 0.22em; text-transform: uppercase; }
+  .wc-cols { display: flex; gap: 6px; }
+  .wc-col {
+    width: 22px; height: 22px; border-radius: 50%; cursor: pointer; padding: 0;
+    background: var(--c); border: 2px solid rgba(0,0,0,0.5);
+    box-shadow: 0 0 6px var(--c); transition: transform 120ms;
+  }
+  .wc-col.on { transform: scale(1.25); border-color: #fff; }
+  .wc-tailles { display: flex; gap: 5px; align-items: center; }
+  .wc-tsz {
+    width: 24px; height: 24px; display: grid; place-items: center; cursor: pointer;
+    background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.14); border-radius: 3px;
+  }
+  .wc-tsz.on { border-color: #fff; background: rgba(255,255,255,0.14); }
+  .wc-tsz span { width: var(--d); height: var(--d); border-radius: 50%; background: rgba(255,255,255,0.75); display: block; }
+  .wc-eff {
+    color: rgba(255,58,94,0.85); font-size: 9px; letter-spacing: 0.18em; text-transform: uppercase;
+    background: none; border: 1px solid rgba(255,58,94,0.4); border-radius: 3px; padding: 4px 8px; cursor: pointer;
+  }
+  .wc-eff:hover { background: rgba(255,58,94,0.12); }
+  .wc-hint { color: rgba(180,210,205,0.45); font-size: 9px; letter-spacing: 0.2em; }
+
+  /* ---- lieu cadré cinéma (cadre noir, image non étirée) ---- */
+  .cine {
+    position: relative; aspect-ratio: 3 / 2;
+    width: min(92vw, calc((100vh - 96px) * 1.5)); max-width: 1040px;
+    box-shadow: 0 14px 60px rgba(0,0,0,0.7);
+  }
+  .cine-stage {
+    position: absolute; inset: 0; overflow: hidden;
+    background-size: cover; background-position: center;
+    border: 1px solid rgba(0,0,0,0.9);
+  }
+  /* lumière du club par la porte — étroite, resserrée, pulse + couleurs, parfois rien */
+  .wc-door {
+    position: absolute; left: 43.5%; top: 26%; width: 7%; height: 34%;
+    pointer-events: none; mix-blend-mode: screen; filter: blur(4px); opacity: 0.22;
+    background: radial-gradient(42% 68% at 50% 46%, rgba(150,90,255,0.5), rgba(80,120,255,0.14) 52%, transparent 76%);
+    animation: door-club 3.4s ease-in-out infinite;
+  }
+  @keyframes door-club {
+    0%   { opacity: 0.1;  filter: blur(4px) hue-rotate(0deg); }
+    12%  { opacity: 0.48; }
+    22%  { opacity: 0.14; }
+    34%  { opacity: 0.6;  filter: blur(5px) hue-rotate(30deg); }
+    46%  { opacity: 0.05; }                 /* parfois rien */
+    60%  { opacity: 0.42; filter: blur(4px) hue-rotate(-25deg); }
+    72%  { opacity: 0.12; }
+    84%  { opacity: 0.54; filter: blur(5px) hue-rotate(15deg); }
+    100% { opacity: 0.1;  filter: blur(4px) hue-rotate(0deg); }
+  }
+  @media (prefers-reduced-motion: reduce) { .wc-neon, .wc-door, .drink-img { animation: none; } }
+  /* survol = l'objet S'ALLUME, façon jeu : blend screen (les carreaux sombres
+     du crop disparaissent → seule la partie lumineuse émerge) + masque radial en
+     FONDU (aucun bord de bloc, ça suit l'objet). Comme l'habitacle. */
+  .hotwrap { position: absolute; }
+  .hot {
+    position: absolute; inset: 0; border: 0; padding: 0; cursor: pointer;
+    background-color: transparent; background-repeat: no-repeat;
+    mix-blend-mode: screen;
+    -webkit-mask-image: radial-gradient(68% 66% at 50% 50%, #000 38%, rgba(0,0,0,0.35) 62%, transparent 82%);
+            mask-image: radial-gradient(68% 66% at 50% 50%, #000 38%, rgba(0,0,0,0.35) 62%, transparent 82%);
+    filter: saturate(1.15) brightness(1.06);
+    opacity: 0; transition: opacity 380ms ease;
+  }
+  .hotwrap:hover .hot, .hot:focus-visible { opacity: 1; outline: none; }
+  /* le libellé murmure et respire (même délire que le seuil), taille selon la profondeur */
+  .hot-cap {
+    position: absolute; left: 50%; top: 50%; transform: translate(-50%,-50%);
+    font-size: var(--cap, 12px); letter-spacing: 0.28em; white-space: nowrap; pointer-events: none;
+    color: rgba(226,232,255,0.5); text-shadow: 0 0 8px rgba(120,150,255,0.3);
+    animation: cap-breath 3.4s ease-in-out infinite alternate;
+    transition: color 320ms ease, text-shadow 320ms ease;
+  }
+  @keyframes cap-breath {
+    from { opacity: 0.45; transform: translate(-50%,-50%) translateY(1px); }
+    to   { opacity: 0.92; transform: translate(-50%,-50%) translateY(-2px); }
+  }
+  .hotwrap:hover .hot-cap { color: #eef2ff; text-shadow: 0 0 12px rgba(140,170,255,0.8); }
+  .hot-lbl {
+    position: absolute; left: 50%; top: -6px; transform: translate(-50%,-100%);
+    background: rgba(8,10,14,0.85); color: #e7d9ff; font-size: 10px;
+    letter-spacing: 0.16em; text-transform: uppercase; padding: 2px 8px;
+    border-radius: 3px; white-space: nowrap; opacity: 0; transition: opacity 160ms;
+  }
+  .hot:hover .hot-lbl, .hot:focus-visible .hot-lbl { opacity: 1; }
+  .hw-urinal { left: 60%; top: 40%; width: 11%; height: 22%; --cap: 12px; }
+  .hw-sink   { left: 72.5%; top: 54%; width: 17.5%; height: 25%; --cap: 14px; }
+  .hw-door   { left: 40%; top: 24%; width: 12%; height: 40%; --cap: 10px; }
+  /* sous-jeux (panneaux cadrés, ne prennent pas tout l'écran) */
+  .sub-panel {
+    position: absolute; inset: 0; z-index: 9; display: flex;
+    align-items: center; justify-content: center;
+    background: rgba(0,0,0,0.6); backdrop-filter: blur(2px); animation: arc-in 200ms ease;
+  }
+  .sub-box {
+    position: relative; display: flex; flex-direction: column; align-items: center; gap: 10px;
+    padding: 14px 16px; max-width: 92vw;
+    background: #0b0f14; border: 2px solid rgba(180,108,255,0.4); border-radius: 6px;
+    box-shadow: 0 0 0 6px rgba(0,0,0,0.5), 0 16px 55px rgba(0,0,0,0.75);
+  }
+  .sub-title { color: #cdbff0; font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase; }
+  .pee-cvs {
+    width: min(480px, 84vw); aspect-ratio: 4 / 3; background: #0c1512;
+    border-radius: 4px; image-rendering: pixelated; touch-action: none; cursor: crosshair;
+  }
+  .sub-hud { display: flex; gap: 18px; align-items: center; color: #cdbff0; font-size: 11px; letter-spacing: 0.06em; }
+  .sub-hud.col { flex-direction: column; align-items: stretch; gap: 7px; width: min(340px, 78vw); }
+  .sub-hud.col span { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+  .sub-hud b {
+    display: inline-block; height: 8px; width: 120px; border-radius: 4px; vertical-align: middle;
+    background: linear-gradient(90deg, var(--c,#ffd76a) var(--w,0%), rgba(255,255,255,0.12) var(--w,0%));
+  }
+  .sub-hud.col b { flex: 1; }
+  .sub-verdict { color: #ffd76a; font-size: 12px; text-align: center; max-width: 380px; line-height: 1.45; }
+  .sub-actions { display: flex; gap: 8px; }
+  .sub-close, .sub-again {
+    font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; cursor: pointer;
+    background: none; border-radius: 3px; padding: 5px 10px;
+  }
+  .sub-close { color: rgba(255,58,94,0.85); border: 1px solid rgba(255,58,94,0.4); }
+  .sub-close:hover { background: rgba(255,58,94,0.12); }
+  .sub-again { color: #bfeee0; border: 1px solid rgba(74,208,160,0.5); }
+  .sub-again:hover { background: rgba(74,208,160,0.14); }
+  /* lavabo : le perso titube ∝ (ivresse+défonce) */
+  .drink-box { width: min(420px, 90vw); }
+  .drink-perso { width: 150px; height: 200px; display: grid; place-items: end center; }
+  .drink-img { max-width: 100%; max-height: 100%; object-fit: contain; transform-origin: 50% 100%; animation: wob 0.9s ease-in-out infinite alternate; }
+  @keyframes wob {
+    from { transform: rotate(calc(var(--wob,0) * -5deg)) translateX(calc(var(--wob,0) * -5px)); }
+    to   { transform: rotate(calc(var(--wob,0) *  5deg)) translateX(calc(var(--wob,0) *  5px)); }
+  }
+  .drink-btn {
+    background: rgba(74,208,160,0.14); border: 1px solid rgba(74,208,160,0.5); color: #bfeee0;
+    padding: 9px 16px; border-radius: 4px; cursor: pointer; letter-spacing: 0.06em; user-select: none;
+  }
+  .drink-btn:active { background: rgba(74,208,160,0.32); }
+
+  /* (indicateur d'état retiré 2026-07-09 — demande Vincent) */
+  /* PORTRAIT MYRTILLE + JAUGE (barque seulement) : prend la place de l'ancien indicateur. */
+  .lev-cell {
+    position: absolute; top: 14px; left: 14px; z-index: 40; width: 58px;
+    display: flex; flex-direction: column; align-items: center; gap: 3px;
+    pointer-events: none; user-select: none;
+  }
+  .lev-frame {
+    position: relative; width: 58px; height: 66px; overflow: hidden; border-radius: 3px;
+    background: #0a0c16; border: 2px solid rgba(120,140,220,0.4);
+    box-shadow: inset -1px -1px #000, inset 1px 1px rgba(90,90,120,0.6), 0 4px 14px rgba(0,0,0,0.6);
+    transition: filter .35s ease, box-shadow .35s ease, border-color .35s ease;
+  }
+  .lev-frame img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 50% 10%; }
+  .lev-lbl {
+    font-size: 8px; letter-spacing: 0.22em; text-transform: uppercase;
+    color: rgba(226,232,255,0.55); text-shadow: 0 0 6px rgba(120,150,255,0.3);
+  }
+  /* ILLUMINÉE quand la jauge est active (lotus = violet, Shiva = or) */
+  .lev-cell.on .lev-frame { filter: saturate(1.1) brightness(1.08); }
+  .lev-cell.on .lev-frame.lvl2 {
+    border-color: color-mix(in srgb, var(--v2000-violet-rave) 85%, #fff);
+    box-shadow: inset -1px -1px #000, 0 0 12px var(--v2000-violet-rave), 0 0 22px color-mix(in srgb, var(--v2000-violet-rave) 55%, transparent);
+    animation: lev-lueur 2.2s ease-in-out infinite;
+  }
+  .lev-cell.on .lev-frame.lvl4 {
+    border-color: color-mix(in srgb, var(--v2000-jaune-sodium) 88%, #fff);
+    box-shadow: inset -1px -1px #000, 0 0 14px var(--v2000-jaune-sodium), 0 0 26px color-mix(in srgb, var(--v2000-jaune-sodium) 55%, transparent);
+    animation: lev-lueur 1.8s ease-in-out infinite;
+  }
+  .lev-cell.on .lev-frame.lvl6 {
+    border-color: #fff;
+    box-shadow: inset -1px -1px #000, 0 0 16px #fff, 0 0 30px var(--v2000-violet-rave);
+    animation: lev-lueur 1.3s ease-in-out infinite;
+  }
+  @keyframes lev-lueur { 0%,100% { filter: saturate(1.1) brightness(1.05); } 50% { filter: saturate(1.25) brightness(1.2); } }
+  /* la jauge sous chaque portrait (override du positionnement absolu par défaut) */
+  .lev-cell .statejauge { position: static; width: 100%; height: 7px; min-height: 7px; }
+  .lev-cell .statejauge.idle { opacity: 0.32; }
+  .lev-cell .statejauge.idle i { width: 0 !important; }
 
   /* ---- INTERNET (modem RTC) ---- */
   .net-screen {
@@ -4121,7 +5095,184 @@
   @media (prefers-reduced-motion: reduce) {
     .perso-levit, .sh-levit { animation: none; }
   }
+  /* ÉTATS FLOTTANTS TENUS (paliers Myrtille) : elle DÉCOLLE du pont et reste en l'air,
+     bob doux. state2 = lotus qui lévite · state4 = déesse, monte plus haut. Ces classes
+     sont posées APRÈS .perso-lean → quand les deux coexistent, la lévitation l'emporte. */
+  /* FRANCO : dès qu'elle lévite elle GROSSIT nettement et MONTE haut (origine = ses fesses,
+     donc elle grandit vers le haut sans décoller du centre), puis glisse lentement encore
+     plus haut et redescend à peine → vol suspendu, imposant. state4 = déesse, plus gros/haut. */
+  .perso-float2 { animation: perso-float2 7.2s ease-in-out infinite; transform-origin: 50% 100%; }
+  @keyframes perso-float2 {
+    0%, 100% { transform: translateY(-11%) scale(1.34); }
+    50%      { transform: translateY(-17%) scale(1.37); }
+  }
+  /* Shiva : même lévitation que le lotus, en place (canvas 940 → scale ~1.41 = taille lotus).
+     La grandeur vient des 6 bras + du halo, pas d'un agrandissement. Reste dans le cadre. */
+  .perso-float4 { animation: perso-float4 8.4s ease-in-out infinite; transform-origin: 50% 100%; }
+  @keyframes perso-float4 {
+    0%, 100% { transform: translateY(-9%) scale(1.41); }
+    50%      { transform: translateY(-14%) scale(1.43); }
+  }
+  /* Boule d'énergie : MÊME géométrie que le Shiva (origine bas, même taille) → aucun saut,
+     aucun agrandissement. Elle devient l'orbe EN PLACE, seule la LUMIÈRE pulse. */
+  .perso-float6 { animation: perso-float6 3.4s ease-in-out infinite; transform-origin: 50% 100%; }
+  @keyframes perso-float6 {
+    0%, 100% { transform: translateY(-9%) scale(1.41);  filter: brightness(1) saturate(1.05); }
+    50%      { transform: translateY(-11%) scale(1.43); filter: brightness(1.2) saturate(1.25); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .perso-float2 { animation: none; transform: translateY(-14%) scale(1.34); }
+    .perso-float4 { animation: none; transform: translateY(-11%) scale(1.41); }
+    .perso-float6 { animation: none; transform: translateY(-11%) scale(1.44); }
+  }
   .perso:hover { animation-play-state: paused; } /* au survol on fige l'idle, l'allumage prend le relais */
+  /* JAUGE DE MAINTIEN D'ÉTAT : petite LCD rétro au-dessus du perso lévitant. */
+  .statejauge {
+    position: absolute; height: 1.1%; min-height: 6px; z-index: 6; pointer-events: none;
+    border: 1px solid rgba(0,0,0,.6); border-radius: 3px; overflow: hidden;
+    background: color-mix(in srgb, var(--v2000-noir-nuit) 78%, transparent);
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,.08), 0 1px 3px rgba(0,0,0,.55);
+  }
+  .statejauge i {
+    display: block; height: 100%; transition: width .1s linear;
+    background: linear-gradient(90deg, var(--v2000-violet-rave), color-mix(in srgb, var(--v2000-violet-rave) 55%, #fff));
+  }
+  .statejauge.lvl4 i { background: linear-gradient(90deg, var(--v2000-jaune-sodium), color-mix(in srgb, var(--v2000-jaune-sodium) 50%, #fff)); }
+  .statejauge.lvl6 i { background: linear-gradient(90deg, var(--v2000-violet-rave), #fff); }
+  .statejauge.low i  { background: linear-gradient(90deg, var(--v2000-rouge-nuit), color-mix(in srgb, var(--v2000-rouge-nuit) 55%, #fff)); }
+  .statejauge.low    { animation: jauge-blink .6s steps(2) infinite; }
+  @keyframes jauge-blink { 50% { opacity: .4; } }
+  /* ÉVÉNEMENT PLEIN ÉCRAN — montée en Shiva : flash + onde de choc (centrés sur Myrtille). */
+  .ascension { position: absolute; inset: 0; z-index: 20; pointer-events: none; overflow: hidden; }
+  .asc-flash {
+    position: absolute; inset: 0; mix-blend-mode: screen;
+    background: radial-gradient(circle at 43% 44%, #fff 0%,
+      color-mix(in srgb, var(--v2000-violet-rave) 82%, #fff) 16%,
+      color-mix(in srgb, var(--v2000-violet-rave) 60%, transparent) 34%, transparent 62%);
+    animation: asc-flash .95s ease-out forwards;
+  }
+  @keyframes asc-flash { 0% { opacity: 0; } 12% { opacity: 1; } 100% { opacity: 0; } }
+  .asc-ring {
+    position: absolute; left: 43%; top: 44%; width: 3%; aspect-ratio: 1; transform: translate(-50%, -50%);
+    border-radius: 50%; border: 3px solid color-mix(in srgb, var(--v2000-violet-rave) 70%, #fff);
+    box-shadow: 0 0 26px var(--v2000-violet-rave), inset 0 0 18px var(--v2000-violet-rave);
+    animation: asc-ring .85s ease-out forwards;
+  }
+  @keyframes asc-ring {
+    0%   { opacity: .95; width: 3%; }
+    100% { opacity: 0; width: 150%; border-width: 1px; }
+  }
+  /* BOULE D'ÉNERGIE : flash plus violent (blanc), 2e onde, un peu plus long. */
+  .ascension.lvl6 .asc-flash {
+    background: radial-gradient(circle at 43% 44%, #fff 0%, #fff 22%,
+      color-mix(in srgb, var(--v2000-violet-rave) 75%, #fff) 40%, transparent 72%);
+    animation-duration: 1.25s;
+  }
+  .ascension.lvl6 .asc-ring { animation-duration: 1.1s; border-width: 4px; }
+  .asc-ring.r2 { animation-delay: .18s; }
+  @media (prefers-reduced-motion: reduce) { .asc-ring { display: none; } }
+
+  /* ============ LE JEU D'HABILLAGE (vestiaire) ============ */
+  /* le perso = pile de calques dans la persoZone, pivot pieds (comme .perso) */
+  .du-perso {
+    position: absolute;
+    transform-origin: 50% 100%; /* pivot aux pieds (§2.1) */
+    pointer-events: none;       /* le clic va aux vignettes / au seuil, pas au perso */
+    will-change: transform;
+    z-index: 2;
+  }
+  .du-layer, .du-ph {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+  }
+  .du-layer { object-fit: contain; object-position: bottom center; user-select: none; -webkit-user-drag: none; }
+  /* PLACEHOLDER de calque : silhouette/aplat coloré étiqueté (PNG absent) —
+     calé sur la même bande que le vrai calque le sera, pivot bas */
+  .du-ph {
+    display: flex; align-items: flex-end; justify-content: center;
+    pointer-events: none;
+  }
+  .du-ph span {
+    background: var(--phc, #6b4fa0);
+    color: #fff; font-size: 9px; letter-spacing: 0.08em;
+    padding: 2px 6px; border-radius: 3px;
+    box-shadow: 0 0 8px rgba(0,0,0,0.4);
+    opacity: 0.9; white-space: nowrap;
+  }
+  /* bandes verticales approximatives par slot (juste pour que les étiquettes
+     placeholder s'étagent sans se superposer — le vrai PNG ignore tout ça) */
+  .du-ph-base { align-items: center; }
+  .du-ph-base span { background: #6b4fa0; font-size: 11px; letter-spacing: 0.14em; padding: 4px 10px; }
+  .du-ph-pieds span { margin-bottom: 2%; }
+  .du-ph-bas span   { margin-bottom: 26%; }
+  .du-ph-haut span  { margin-bottom: 52%; }
+  .du-ph-coiffe { align-items: flex-start; }
+  .du-ph-coiffe span { margin-top: 2%; }
+
+  /* ---- CYCLERS PAR ZONE DU CORPS (§1.2) : transparents, posés sur la persoZone,
+     chacun à hauteur de sa partie du corps. Chevrons ◀▶ discrets qui s'éclairent
+     au survol ; bande centrale cliquable/swipe. Cibles tactiles généreuses. ---- */
+  .du-cycler {
+    position: absolute;
+    display: flex; align-items: center; justify-content: space-between;
+    z-index: 6;
+    pointer-events: none; /* seuls les enfants captent le clic → le reste passe au décor */
+  }
+  /* la zone du corps : cible tap/swipe pleine largeur, invisible (survol = léger halo) */
+  .du-hit {
+    position: absolute; inset: 0;
+    background: transparent; border: 0; cursor: pointer;
+    pointer-events: auto;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: pan-y;
+    transition: background 160ms ease;
+  }
+  .du-hit:hover { background: radial-gradient(ellipse at center, rgba(200,138,208,0.10), transparent 70%); }
+  /* chevrons : semi-transparents, généreux au doigt, s'éclairent au survol */
+  .du-chev {
+    position: relative; z-index: 1;
+    pointer-events: auto;
+    width: 34px; height: 34px; min-width: 34px;
+    display: flex; align-items: center; justify-content: center;
+    color: rgba(232,224,255,0.42);
+    background: rgba(20,16,24,0.28);
+    border: 1px solid rgba(200,138,208,0.22); border-radius: 50%;
+    font-size: 22px; line-height: 1; font-weight: 700;
+    cursor: pointer; transition: all 150ms ease;
+    text-shadow: 0 0 6px rgba(0,0,0,0.5);
+  }
+  .du-chev-l { margin-left: -6px; }
+  .du-chev-r { margin-right: -6px; }
+  .du-cycler:hover .du-chev { color: rgba(232,224,255,0.72); border-color: rgba(200,138,208,0.4); }
+  .du-chev:hover { color: #fff; background: rgba(200,138,208,0.28); border-color: #c88ad0; box-shadow: 0 0 12px rgba(200,138,208,0.45); }
+  /* le nom de la pièce, brièvement (petit, au changement §1.2) */
+  .du-name {
+    position: absolute; left: 50%; top: 50%;
+    transform: translate(-50%, -50%);
+    pointer-events: none; z-index: 2;
+    color: #fff; font-size: 10px; letter-spacing: 0.12em; white-space: nowrap;
+    background: rgba(16,12,20,0.82); border: 1px solid rgba(200,138,208,0.5);
+    border-radius: 3px; padding: 3px 8px;
+    box-shadow: 0 0 12px rgba(200,138,208,0.3);
+  }
+  /* ---- COMMANDES COMPACTES (§1.3) : 🎲 + ↺, en coin, transparents ---- */
+  .du-corner {
+    position: absolute; top: 3%; right: 3%;
+    display: flex; gap: 6px; z-index: 7;
+  }
+  .du-mini {
+    width: 30px; height: 30px;
+    display: flex; align-items: center; justify-content: center;
+    color: rgba(232,224,255,0.6);
+    background: rgba(20,16,24,0.3);
+    border: 1px solid rgba(200,138,208,0.25); border-radius: 50%;
+    font-size: 15px; cursor: pointer; transition: all 150ms ease;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .du-mini:hover { color: #fff; background: rgba(200,138,208,0.28); border-color: #c88ad0; box-shadow: 0 0 12px rgba(200,138,208,0.4); }
+  @media (prefers-reduced-motion: reduce) { .du-perso { animation: none; } }
 
   /* ============ MINI-PROMPT « rouler un joint ? » (skin rétro) ============ */
   .roll-ask {
@@ -4209,8 +5360,9 @@
      Un léger anneau de sélection au survol, sans baver sur les perso. */
   .lieu.zlight { background: none !important; }
   .lieu.zlight:hover {
-    box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--v2000-jaune-sodium) 60%, transparent);
-    border-radius: 12px;
+    opacity: 1;
+    background: radial-gradient(circle at 50% 46%, color-mix(in srgb, var(--v2000-jaune-sodium) 46%, transparent) 0%, transparent 62%) !important;
+    mix-blend-mode: screen;
   }
 
   /* ============ RONDS DE FUMÉE (placeholder CSS, remplacé par les frames noir en 'screen') ============ */

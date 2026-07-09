@@ -46,22 +46,32 @@
 </section>
 
 <style>
+  /* Chrome rétro Win98/2000 (bevels argent + title-bar bleue dégradée),
+     réimplémenté en scopé — pas de lib globale, offline, zéro clash scènes. */
   .win {
     position: absolute;
     display: flex;
     flex-direction: column;
-    background: var(--win);
-    border: 1.5px solid var(--ink);
-    box-shadow: 3px 3px 0 rgba(35, 35, 31, 0.18);
+    background: #c0c0c0;
+    padding: 3px;
+    /* biseau sortant (outset) classique 98 */
+    box-shadow:
+      inset -1px -1px #0a0a0a,
+      inset  1px  1px #ffffff,
+      inset -2px -2px #808080,
+      inset  2px  2px #dfdfdf,
+      2px 3px 6px rgba(0, 0, 0, 0.35);
     animation: pop 90ms ease-out;
     min-width: 220px;
   }
-  .win.top {
-    box-shadow: 5px 5px 0 rgba(35, 35, 31, 0.28);
+  .win.top { box-shadow:
+      inset -1px -1px #0a0a0a,
+      inset  1px  1px #ffffff,
+      inset -2px -2px #808080,
+      inset  2px  2px #dfdfdf,
+      3px 5px 12px rgba(0, 0, 0, 0.5);
   }
-  .win.min {
-    display: none;
-  }
+  .win.min { display: none; }
   @keyframes pop {
     from { transform: scale(0.97); opacity: 0.6; }
     to { transform: scale(1); opacity: 1; }
@@ -71,42 +81,60 @@
     align-items: center;
     justify-content: space-between;
     gap: 8px;
-    padding: 3px 6px 3px 9px;
-    background: var(--panel);
-    border-bottom: 1.5px solid var(--ink);
+    padding: 2px 2px 2px 7px;
+    /* title-bar INACTIVE : gris */
+    background: linear-gradient(90deg, #808080, #b5b5b5);
+    color: #dedede;
     cursor: grab;
     user-select: none;
     touch-action: none;
   }
   .top header {
-    background: var(--ink);
+    /* title-bar ACTIVE : dégradé bleu Win2000 */
+    background: linear-gradient(90deg, #000080 0%, #1084d0 100%);
     color: #fff;
   }
   header:active { cursor: grabbing; }
   .title {
     font-size: 12px;
-    letter-spacing: 0.03em;
+    font-weight: 700;
+    letter-spacing: 0.02em;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    text-shadow: 0 1px 0 rgba(0, 0, 0, 0.35);
   }
   .ctl { display: flex; gap: 2px; }
   .ctl button {
-    width: 22px;
-    height: 18px;
+    width: 18px;
+    height: 16px;
     line-height: 1;
-    border: 1px solid currentColor;
-    font-size: 12px;
+    color: #000;
+    background: #c0c0c0;
+    border: none;
+    box-shadow:
+      inset -1px -1px #0a0a0a,
+      inset  1px  1px #ffffff,
+      inset -2px -2px #808080,
+      inset  2px  2px #dfdfdf;
+    font: 700 11px sans-serif;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    transition: transform 60ms ease;
+    padding-bottom: 2px;
   }
-  .ctl button:hover { background: rgba(127, 127, 120, 0.25); }
-  .ctl button:active { transform: translate(1px, 1px); }
+  .ctl button:active {
+    box-shadow:
+      inset  1px  1px #0a0a0a,
+      inset -1px -1px #ffffff,
+      inset  2px  2px #808080,
+      inset -2px -2px #dfdfdf;
+    padding: 1px 0 0 1px;
+  }
   .body {
     flex: 1;
     overflow: auto;
     position: relative;
+    background: #c0c0c0;
   }
 </style>

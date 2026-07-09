@@ -49,6 +49,17 @@ export function openItem(item, ctx = {}) {
     case 'exe':
       openWindow({ appId: 'exe', key: `exe:${item.id}`, title: item.name, props: { exeId: item.id }, w: 380, h: 240 });
       break;
+    case 'game': {
+      const vw = typeof window !== 'undefined' ? window.innerWidth : 1200;
+      const vh = typeof window !== 'undefined' ? window.innerHeight : 800;
+      const w = Math.min(720, vw - 60), h = Math.min(460, vh - 90);
+      openWindow({
+        appId: 'game', key: `game:${item.id}`, title: item.name,
+        props: { gameId: item.gameId ?? item.id }, w, h,
+        x: Math.max(20, (vw - w) / 2), y: Math.max(10, (vh - h) / 2 - 20),
+      });
+      break;
+    }
     case 'lab':
       openWindow({ appId: 'soundlab', key: 'soundlab', title: 'UI Sound Lab', w: 560, h: 470 });
       break;

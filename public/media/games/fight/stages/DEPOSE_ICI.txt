@@ -1,0 +1,29 @@
+NIGHT FIGHT — décor par couches (sprites de stage)
+==================================================
+
+Dépose ici tes PNG/WEBP transparents, rangés par stage :
+  stages/rave/fond_neon.webp
+  stages/rave/enceintes.webp
+  stages/pmu/comptoir.webp   ... etc.
+
+Puis référence-les dans STAGES[] (src/os/apps/GameApp.svelte) :
+
+layers: [                                   // décor NON collidable (parallax)
+  { src:'rave/fond_neon.webp', x:240, y:60,  w:520, depth:0.5 },   // lointain (bouge peu)
+  { src:'rave/enceintes.webp', x:120, y:212, w:180, depth:1.0 },   // plan de jeu (y = bas du sprite)
+  { src:'rave/barriere.webp',  x:240, y:212, w:520, depth:1.15, front:true } // DEVANT les persos
+],
+plats: [                                    // plateformes COLLIDABLES (one-way, Melee soft platform)
+  { x:150, y:76,  w:90 },                          // barre néon auto si pas de sprite
+  { x:330, y:140, w:80, src:'rave/caisson.webp' }  // ...ou ton sprite
+]
+
+Repères :
+- x : 0..480 (centre du sprite/plateforme). Sol = y 212. Persos ~150 px de haut.
+- plats.y ET layers.y : hauteur du bas AU-DESSUS du sol (négatif = sous le sol, ex. foule au premier plan).
+- plat.src : bord HAUT du sprite = surface où on marche (le corps descend en dessous).
+- w : demi-largeur (plateforme) ou largeur affichée (layer).
+- depth : <1 lointain (parallax), 1 plan de jeu, >1 + front:true = premier plan.
+- Sprite manquant = ignoré (aucune erreur). WEBP conseillé, fond transparent.
+
+Contrôles plateformes : sauter dessus par au-dessus ; tenir/tap BAS pour redescendre à travers.

@@ -4,6 +4,8 @@
 > Écrite par Vincent (directeur créatif), validée 2026-07-04.
 > Résumé courant : `000_PROJECT_MEMORY.md`. Méthode de fabrication des images :
 > `exploration/nightdrive/da_cible.md`. Principes créatifs : `005_DESIGN_PRINCIPLES.md`.
+>
+> **⚠️ AMENDEMENT D18 (2026-07-06) — virage rendu image.** Les images de décor visent désormais un **ciné-réalisme sombre** (validé sur le vestiaire de LA RIDE), et non plus le rendu « PS2 2003 » peint. Le PS2 reste une **attitude** (contrastes forts, couleurs saturées la nuit, néons qui bavent, brouillard qui masque les limites) et un **vernis optionnel** (grain/scanlines CRT léger), plus la cible de fidélité. Détail : `090` (D18). En cas de contradiction avec le texte ci-dessous, D18 prime pour la génération d'images.
 
 ## 1. Intention générale
 

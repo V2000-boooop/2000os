@@ -15,8 +15,10 @@
 const BASE = '/media/nightdrive/sons';
 
 // Volume de repos des ambiances : très bas (D13 — elles ne rivalisent jamais
-// avec l'antenne). Ducké quasi à zéro quand un son de l'OS passe.
+// avec l'antenne). Quand l'antenne parle, le monde se fait PETIT, pas mort :
+// murmure audible (avant : 0 absolu → « le son ne se lance pas », It36).
 const AMB_VOL = 0.32;
+const DUCK_VOL = 0.08;
 
 // Un one-shot déjà constaté absent n'est plus re-tenté (évite de spammer des
 // 404 à chaque clic). Les boucles ne sont pas cachées (changements rares).
@@ -43,13 +45,17 @@ export function sfx(name, vol = 0.9) {
 /** Boucle contrôlable (ambiance, univers). Renvoie { setVol, stop }. */
 export function loop(name, vol = AMB_VOL) {
   if (!canAudio()) return { setVol() {}, stop() {} };
+  let stopped = false; // garde anti-boucle ORPHELINE : si stop() arrive pendant la
+  // bascule wav→mp3 (fichier .wav absent), le .mp3 ne doit JAMAIS démarrer —
+  // sinon une boucle fantôme tourne pour toujours, plus rien ne la contrôle.
   let cur = new Audio(`${BASE}/${name}.wav`);
   cur.loop = true;
   cur.volume = vol;
   cur.onerror = () => {
+    if (stopped) return;
     const b = new Audio(`${BASE}/${name}.mp3`);
     b.loop = true;
-    b.volume = vol;
+    b.volume = cur.volume; // reprend le volume courant (un duck a pu passer entre-temps)
     b.onerror = () => {}; // aucun fichier : la boucle reste muette, sans erreur
     cur = b;
     b.play().catch(() => {});
@@ -57,7 +63,7 @@ export function loop(name, vol = AMB_VOL) {
   cur.play().catch(() => {});
   return {
     setVol(v) { try { cur.volume = v; } catch {} },
-    stop() { try { cur.pause(); } catch {} },
+    stop() { stopped = true; try { cur.pause(); } catch {} },
   };
 }
 
@@ -77,12 +83,12 @@ export function setAmbiance(scene) {
   amb?.stop();
   amb = null;
   ambScene = scene;
-  if (scene) amb = loop(`ambiance_${scene}`, ambDuck ? 0 : AMB_VOL);
+  if (scene) amb = loop(`ambiance_${scene}`, ambDuck ? DUCK_VOL : AMB_VOL);
 }
 
 /** L'antenne prend la parole → l'ambiance s'efface (et revient quand elle se tait). */
 export function duckAmbiance(on) {
   if (on === ambDuck) return;
   ambDuck = on;
-  amb?.setVol(on ? 0 : AMB_VOL);
+  amb?.setVol(on ? DUCK_VOL : AMB_VOL);
 }

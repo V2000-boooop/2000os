@@ -31,7 +31,9 @@ export const tree = [
           { id: 'basse1', name: 'basse_test_01.wav', kind: 'audio', src: '/media/basse_test_01.wav' },
         ],
       },
-      { id: 'morceaux', name: 'morceaux finis', kind: 'folder', children: [] },
+      { id: 'morceaux', name: 'morceaux finis', kind: 'folder', children: [
+          { id: 'radio_jp_garage', name: 'RADIO JAPAN GARAGE 1', kind: 'audio', src: '/media/radio_japan_garage_1.webm', srcGlove: '/media/radio_japan_garage_boite.webm', fav: true },
+        ] },
     ],
   },
   {
@@ -76,6 +78,7 @@ export const tree = [
   {
     id: 'jeux', name: 'Jeux', kind: 'folder',
     children: [
+      { id: 'game_fight', name: 'NIGHT_FIGHT.exe', kind: 'game', gameId: 'fight', glyph: '🥊', version: 'v0.1', year: '2026', desc: 'baston de nuit — 1P vs CPU ou 2 joueurs.' },
       { id: 'exe_car', name: 'CAR.exe', kind: 'exe', glyph: '🚗', version: 'v0.4', year: '2024', desc: 'conduire. écouter. rien d\'autre.', message: 'bientôt disponible.\n\nla route est en cours de construction.' },
       { id: 'exe_pong', name: 'PONG_2000.exe', kind: 'exe', glyph: '🏓', version: 'v0.9', year: '2019', desc: 'le premier. toujours pas fini.', message: 'bientôt disponible.\n\n(depuis 2019, oui.)' },
       { id: 'exe_radio', name: 'RADIO.exe', kind: 'exe', glyph: '📻', version: 'v0.2', year: '2025', desc: 'des fréquences introuvables ailleurs.', message: 'bientôt disponible.\n\nrecherche du signal…' },

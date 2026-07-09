@@ -69,6 +69,8 @@
     raf = requestAnimationFrame(meterLoop);
     return () => {
       cancelAnimationFrame(raf);
+      if (volFade) clearInterval(volFade);
+      if (audio) audio.pause();
       if (mCtx) mCtx.close().catch(() => {});
       unbindAudio();
     };
@@ -78,16 +80,54 @@
     if (!audio) return;
     bindAudio(audio);
     if (!track) return;
-    if (!audio.src.endsWith(track.src)) {
-      audio.src = track.src;
-      progress = 0;
-      current = 0;
+    // texture « boîte à gant » : même enregistrement remixé → on swappe la source EN GARDANT le même instant
+    const want = (player.glovebox && track.srcGlove) ? track.srcGlove : track.src;
+    if (!audio.src.endsWith(want)) {
+      const isTextureSwap = track.srcGlove && (audio.src.endsWith(track.src) || audio.src.endsWith(track.srcGlove));
+      if (isTextureSwap) {
+        const pos = audio.currentTime || 0;
+        const wasPlaying = !audio.paused && !audio.ended;
+        audio.src = want;
+        const restore = () => { try { audio.currentTime = pos; } catch (e) {} };
+        if (audio.readyState >= 1) restore(); else audio.addEventListener('loadedmetadata', restore, { once: true });
+        if (wasPlaying) audio.play().catch(() => {});
+      } else {
+        audio.src = want;
+        progress = 0;
+        current = 0;
+      }
     }
     if (player.autoplay) {
       player.autoplay = false;
-      audio.play().catch(() => {});
+      if (player.randomStart) {
+        player.randomStart = false;
+        const seekRand = () => { const d = audio.duration; if (d && isFinite(d)) { try { audio.currentTime = Math.random() * d * 0.9; } catch (e) {} } };
+        audio.volume = 0;
+        audio.play().then(() => { seekRand(); fadeVol(1, 1000); }).catch(() => {});
+        if (audio.readyState < 1) audio.addEventListener('loadedmetadata', seekRand, { once: true });
+      } else if (player.fadeIn) {
+        player.fadeIn = false;
+        audio.volume = 0;
+        audio.play().then(() => fadeVol(1, 1000)).catch(() => {}); // fondu d'entrée d'1 s
+      } else {
+        audio.volume = 1;
+        audio.play().catch(() => {});
+      }
     }
   });
+
+  // fondu de volume sur l'élément audio
+  let volFade = null;
+  function fadeVol(target, ms) {
+    if (!audio) return;
+    if (volFade) clearInterval(volFade);
+    const start = audio.volume, t0 = performance.now();
+    volFade = setInterval(() => {
+      const k = Math.min(1, (performance.now() - t0) / ms);
+      audio.volume = Math.max(0, Math.min(1, start + (target - start) * k));
+      if (k >= 1) { clearInterval(volFade); volFade = null; }
+    }, 40);
+  }
 
   function onPlay() {
     ensureMeter();

@@ -1,0 +1,5 @@
+Dépose ici les frames des combattants (fond vert ou transparent).
+Nommage : fighter_<perso>_<action>_<n>.webp
+ex : fighter_belge_idle_1.webp, fighter_belge_walk_1..6.webp, fighter_belge_straight_1..3.webp
+Actions : idle, walk, jump, hit, ko, jab, straight, cpunch, lkick, roundhouse, sweep, special.
+Puis on active le perso dans SPRITE_SETS (enabled:true + nb de frames).

@@ -30,3 +30,5 @@
 
 ## MESSAGE À COLLER dans la nouvelle conversation
 > Lis `docs/000_PROJECT_MEMORY.md` puis `docs/NOTES_PROCHAINE_SESSION.md`, puis : [choisis ta tâche du jour, ex. « on code la passe du joint Myrtille→Stick dans la barque » OU « je viens de déposer cathedrale_base + le prêtre, branche-les »].
+
+- **Sons bruts de Vincent** : sur le **Bureau `~/Desktop/OS 2000/`** (ex. `RADIO JAPAN GARAGE 1.mp3/.wav/.als`). Chercher là en priorité pour les sons du jeu/OS. Convertir en `.webm` (opus 64-96k) avant de brancher.

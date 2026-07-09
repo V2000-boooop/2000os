@@ -18,6 +18,9 @@ Vincent 2000 OS n'est pas seulement le lieu où le travail se montre : c'est un 
 **1. Tout a une raison d'exister.**
 Chaque interaction, chaque détail, chaque son sert l'un de deux buts : faciliter la découverte du travail, ou enrichir l'univers de Vincent 2000. Ce qui ne fait ni l'un ni l'autre est supprimé, même si c'est joli, drôle ou techniquement impressionnant.
 
+**1-bis. L'interaction vivante escalade et laisse une trace (pattern cœur, demande Vincent 2026-07-07).**
+Une action répétée sur un élément ne rejoue pas bêtement la même chose : elle **escalade par paliers**. Au bout de N répétitions, une courte animation se déclenche et **se fige en un nouvel état persistant** que l'objet/le perso **garde dans la scène** (il ne revient pas à l'état initial). Ex. fondateur : faire fumer le raver sur la barque — 2 taffes → un état planant tenu, 4 taffes → un état plus défoncé tenu, chacun modifiant aussi son état global (ivresse/défonce, indicateur à l'écran). C'est le genre de vie qu'on vise **partout** : des états qui s'accumulent et restent, pas des gadgets qui se réinitialisent. (Implémenté : compteur `stickPuffs` + `STICK_STATES` + pose tenue `stickHeld` dans NightDrive ; il ne manque que les frames des paliers.)
+
 **2. Le contenu prime sur l'effet.**
 Le site reste un véritable outil : retrouver une musique, une recherche, une note ou un projet doit toujours être rapide. L'expérience enrichit l'accès au contenu ; elle ne s'interpose jamais devant lui.
 
