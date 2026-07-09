@@ -1,6 +1,6 @@
 # Notes / Compact — reprise
 
-## EN ATTENTE DE TEST VINCENT (It40 barque + It41 prêtre — POUSSÉ EN LIGNE, build+smoke verts)
+## EN ATTENTE DE TEST VINCENT (It40 barque + It41 prêtre + It42b danse CSS cut-out — build vert)
 **It41 — le prêtre (détail : `090`)** : église vide → il arrive en marchant (hors-champ droit, ~23-45 s après l'entrée) → quémande en boucle, dialogue à droite → OUI = bénédiction main lumineuse + sermon joyeux, il reste · NON = gueulante + dissolution fumée violette. À vérifier en test :
 1. Position/taille du prêtre (x38 y30 w20 h56 dans `scenes.js`) et point d'arrivée de la marche.
 2. Sens de la marche (il vient de la droite ; si les sprites regardent dans le mauvais sens → on flip).
@@ -8,6 +8,14 @@
 4. Le dialogue ne couvre pas l'anim (`.roll-ask.coin`, décalé à droite).
 → Retours en UNE liste numérotée.
 **It40 — barque** : K7 clic=play/re-clic=stop/sortie=stop · ambiance 0.65 · voix radio (on/ouvrir/mise en route/passby) · danse : déposer `myrtille_radio_1..N.webp` + `stick_radio_1..N.webp` (même bbox que idle) + nombre de frames → 1 ligne/perso dans `scenes.js`.
+
+## CHANTIER DANSE BARQUE — CSS CUT-OUT (It42b, à tester live)
+- **Approche frame-par-frame ABANDONNÉE** (Vincent : « ça clignote, mal détouré »). Enchaîner des poses repeintes = scintillement + les modèles image ne tiennent pas la cohérence. Piège.
+- **Méthode retenue = collage cut-out animé par CSS** : la découpe idle (déjà propre) CLAQUE sur le rythme via transform `steps(1)` (snap tenu → saute), pivot assise. Zéro frame repeinte → zéro scintillement, bords nets, 0 asset.
+- **Câblage (NightDrive.svelte + scenes.js)** : `canDance:true` sur Myrtille + Stick ; `favDance:true` sur Myrtille. `$effect` → `danceLvl[id]` = 1 (toute musique) ou 2 (K7 `PINO2000`, la préférée de Myrtille). Classes `.dance-a` (1,8 s/snap, lent) / `.dance-b` (1,1 s, vif) sur `.perso`. Ne danse que depuis le repos (états roule/fume/lévite sacrés) ; stop musique = retour idle.
+- **Tempo réglable** : `animation-duration` des `.dance-a/.dance-b` + les 4 keyframes `cutout-dance`. Dire « plus lent / plus ample / plus penché ».
+- **NIVEAU 2 = pantin articulé (à faire quand calques déposés)** : sur PINO2000, Myrtille passe en rig bras/tête séparés. Prompt ChatGPT donné (calques tête/torse/bras G/bras D sur fond vert #00FF00, même échelle/cam). Déposer → je rigge (calques empilés, chaque bras `transform-origin` épaule, snap sur le beat). En attendant, `.dance-b` donne déjà un snap plus vif à Pino.
+- Ancien script `build_danse_frames.py` + sources gardés dans `archives/danse_sources/` (inutiles pour le CSS, utiles si un jour vraies frames).
 
 ## RESTE À DÉPOSER (safe-absent)
 - Halos/reflets cathédrale : `cathedrale_halo_joyeux|vener.webp` + reflets vitraux/murs (6 fichiers, `scenes/overlays/`).
