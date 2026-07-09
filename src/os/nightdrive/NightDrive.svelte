@@ -1952,7 +1952,7 @@
                   <!-- ombre-plancher (sous le perso) : réagit à la lévitation -->
                   <div class="perso-shadow" class:sh-levit={perso.anim === 'levit'} style="left:{perso.shadow.x}%; top:{perso.shadow.y}%; width:{perso.shadow.w}%; height:{perso.shadow.h}%;"></div>
                 {/if}
-                <div class="perso perso-{perso.anim}" class:solo={!!(perso.src || perso.poses)} class:smokeable={smoking[perso.id]} class:dance-a={danceLvl[perso.id] === 1} class:dance-b={danceLvl[perso.id] === 2} class:perso-float2={floatOn(perso) === 2} class:perso-float4={floatOn(perso) === 4} class:perso-float6={floatOn(perso) === 6} role="button" tabindex="-1" onclick={() => personaClick(perso)} style="left:{perso.x}%; top:{perso.y}%; width:{perso.w}%; height:{perso.h}%;">
+                <div class="perso perso-{perso.anim}" class:solo={!!(perso.src || perso.poses)} class:smokeable={smoking[perso.id]} class:dance-a={danceLvl[perso.id] === 1 && !perso.rig} class:dance-b={danceLvl[perso.id] === 2 && !perso.rig} class:perso-float2={floatOn(perso) === 2} class:perso-float4={floatOn(perso) === 4} class:perso-float6={floatOn(perso) === 6} role="button" tabindex="-1" onclick={() => personaClick(perso)} style="left:{perso.x}%; top:{perso.y}%; width:{perso.w}%; height:{perso.h}%;">
                   {#if perso.poses}
                     <!-- les FRAMES d'une séquence restent crisp (src qui change) ; le CHANGEMENT
                          DE POSE fait un fondu → la fumée de la dernière frame se DISSIPE en
@@ -1965,6 +1965,15 @@
                   {:else}
                     <img class="perso-off" src={perso.off} alt="" draggable="false" />
                     <img class="perso-on" src={perso.on} alt="" draggable="false" />
+                  {/if}
+                  <!-- PANTIN ARTICULÉ : calques empilés (même cadre) par-dessus l'idle
+                       quand elle danse ; bras + tête snappent autour de leur pivot. -->
+                  {#if perso.rig && danceLvl[perso.id]}
+                    <div class="rig" class:rig-fast={danceLvl[perso.id] === 2} transition:fade={{ duration: 220 }}>
+                      {#each perso.rig as L (L.part)}
+                        <img class="rig-part rig-{L.part}" src={L.src} alt="" draggable="false" style="--px:{L.px}%; --py:{L.py}%;" />
+                      {/each}
+                    </div>
                   {/if}
                 </div>
               {/each}
@@ -5276,6 +5285,23 @@
     75%  { transform: translateY(-2.5%) rotate(-2deg) scale(1.02); }
   }
   @media (prefers-reduced-motion: reduce) { .perso.dance-a, .perso.dance-b { animation: none; } }
+  /* PANTIN ARTICULÉ (rig calques) : chaque pièce partage le cadre (inset:0, contain →
+     alignées) ; seuls bras + tête s'animent, autour de leur pivot (--px --py = épaule/
+     nuque). steps(1) = snap cut-out. Corps (jambes+buste) immobile. */
+  .rig { position: absolute; inset: 0; pointer-events: none; --rigper: 1.8s; }
+  .rig.rig-fast { --rigper: 1.05s; }  /* PINO2000 : plus vif */
+  .rig-part {
+    position: absolute; inset: 0; width: 100%; height: 100%;
+    object-fit: contain; user-select: none; -webkit-user-drag: none;
+    transform-origin: var(--px) var(--py); will-change: transform;
+  }
+  .rig-brasd { animation: rig-armR var(--rigper) steps(1, end) infinite; }
+  .rig-brasg { animation: rig-armL var(--rigper) steps(1, end) infinite; }
+  .rig-tete  { animation: rig-head var(--rigper) steps(1, end) infinite; }
+  @keyframes rig-armR { 0%{transform:rotate(-5deg)} 25%{transform:rotate(3deg)} 50%{transform:rotate(-2deg)} 75%{transform:rotate(4deg)} }
+  @keyframes rig-armL { 0%{transform:rotate(4deg)} 25%{transform:rotate(-3deg)} 50%{transform:rotate(5deg)} 75%{transform:rotate(-2deg)} }
+  @keyframes rig-head { 0%{transform:translateY(0) rotate(-2deg)} 25%{transform:translateY(-1.2%) rotate(2deg)} 50%{transform:translateY(0) rotate(-1deg)} 75%{transform:translateY(-1.6%) rotate(3deg)} }
+  @media (prefers-reduced-motion: reduce) { .rig-part { animation: none; } }
   /* idle : deux tempos différents pour casser la symétrie */
   .perso-lean { animation: perso-breathe 5.2s ease-in-out infinite; }
   .perso-gaze { animation: perso-sway 6.6s ease-in-out infinite; }

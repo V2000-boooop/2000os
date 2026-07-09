@@ -144,6 +144,17 @@ export const SCENES = {
       // toutes les poses de Myrtille partagent la MÊME bbox (idle + 7 frames) → calage parfait, zéro saut.
       { id: 'myrtille', name: 'Myrtille', x: 35, y: 20, w: 16, h: 44, anim: 'lean',
         canDance: true, favDance: true, // danse cut-out sur la musique ; PINO2000 = sa préférée (Niveau 2)
+        // PANTIN ARTICULÉ (assise, calques fond vert détourés → tools/build_rig_layers.py).
+        // Ordre = z (jambes derrière → tête devant). px/py = pivot en % du cadre commun
+        // (887×1774) : épaules pour les bras, nuque pour la tête. Corps immobile, seuls
+        // bras + tête snappent sur le rythme (CSS). Affiché seulement quand elle danse.
+        rig: [
+          { part: 'jambes', src: `${S}/perso/myrtille_rig_jambes.webp`, px: 50,   py: 100  },
+          { part: 'buste',  src: `${S}/perso/myrtille_rig_buste.webp`,  px: 50,   py: 100  },
+          { part: 'brasd',  src: `${S}/perso/myrtille_rig_brasd.webp`,  px: 74.5, py: 17.2 },
+          { part: 'brasg',  src: `${S}/perso/myrtille_rig_brasg.webp`,  px: 65.5, py: 12.8 },
+          { part: 'tete',   src: `${S}/perso/myrtille_rig_tete.webp`,   px: 47.5, py: 57.6 },
+        ],
         poses: {
           idle: `${S}/perso/myrtille_idle.webp`,
           // séquence « roule un joint » : 1-4 elle roule, 5 briquet, 6 allume, 7 fume

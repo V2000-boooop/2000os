@@ -1,6 +1,6 @@
 # Notes / Compact — reprise
 
-## EN ATTENTE DE TEST VINCENT (It40 barque + It41 prêtre + It42b danse CSS cut-out — build vert)
+## EN ATTENTE DE TEST VINCENT (It40 barque + It41 prêtre + It42c danse : rig articulé assis + CSS cut-out — build vert)
 **It41 — le prêtre (détail : `090`)** : église vide → il arrive en marchant (hors-champ droit, ~23-45 s après l'entrée) → quémande en boucle, dialogue à droite → OUI = bénédiction main lumineuse + sermon joyeux, il reste · NON = gueulante + dissolution fumée violette. À vérifier en test :
 1. Position/taille du prêtre (x38 y30 w20 h56 dans `scenes.js`) et point d'arrivée de la marche.
 2. Sens de la marche (il vient de la droite ; si les sprites regardent dans le mauvais sens → on flip).
@@ -14,8 +14,9 @@
 - **Méthode retenue = collage cut-out animé par CSS** : la découpe idle (déjà propre) CLAQUE sur le rythme via transform `steps(1)` (snap tenu → saute), pivot assise. Zéro frame repeinte → zéro scintillement, bords nets, 0 asset.
 - **Câblage (NightDrive.svelte + scenes.js)** : `canDance:true` sur Myrtille + Stick ; `favDance:true` sur Myrtille. `$effect` → `danceLvl[id]` = 1 (toute musique) ou 2 (K7 `PINO2000`, la préférée de Myrtille). Classes `.dance-a` (1,8 s/snap, lent) / `.dance-b` (1,1 s, vif) sur `.perso`. Ne danse que depuis le repos (états roule/fume/lévite sacrés) ; stop musique = retour idle.
 - **Tempo réglable** : `animation-duration` des `.dance-a/.dance-b` + les 4 keyframes `cutout-dance`. Dire « plus lent / plus ample / plus penché ».
-- **NIVEAU 2 = pantin articulé (à faire quand calques déposés)** : sur PINO2000, Myrtille passe en rig bras/tête séparés. Prompt ChatGPT donné (calques tête/torse/bras G/bras D sur fond vert #00FF00, même échelle/cam). Déposer → je rigge (calques empilés, chaque bras `transform-origin` épaule, snap sur le beat). En attendant, `.dance-b` donne déjà un snap plus vif à Pino.
-- Ancien script `build_danse_frames.py` + sources gardés dans `archives/danse_sources/` (inutiles pour le CSS, utiles si un jour vraies frames).
+- **PANTIN ARTICULÉ ASSIS — FAIT (It42c)** : Vincent a fourni 4 calques fond vert (tête/buste/brasdroit/brasgauche, partis de l'idle, cadre 887×1774). `tools/build_rig_layers.py` : détoure le vert (despill + plus grande composante + érosion 1px) → `myrtille_rig_{tete,buste,brasd,brasg}.webp` + fabrique `myrtille_rig_jambes.webp` depuis l'idle (les calques ne couvrent que le haut). Sources → `archives/rig_sources/`. Data `rig[]` sur Myrtille (scenes.js, z-order + pivots %). DOM `.rig` + CSS : jambes+buste immobiles, bras+tête snappent autour de leur pivot (`steps(1)`, `--rigper` 1,8 s / 1,05 s en `.rig-fast` pour PINO2000). Affiché seulement quand elle danse ; garde : perso riggé → pas de danse « corps entier ». Vérifié en simulation (épaules/nuque attachées). Build vert.
+- **RIG DEBOUT — à générer (prompts donnés)** : pour qu'elle danse DEBOUT (plus vif, ex. Niveau 2 PINO). Générer une Myrtille debout sur fond vert (bras écartés du corps → séparables), puis découper les mêmes calques (tête/buste/bras G/bras D + jambes) même fond vert même cadre → drop-in, je rigge à l'identique (`build_rig_layers.py`, adapter MAP + pivots).
+- Ancien `build_danse_frames.py` + `archives/danse_sources/` gardés (approche frames abandonnée).
 
 ## RESTE À DÉPOSER (safe-absent)
 - Halos/reflets cathédrale : `cathedrale_halo_joyeux|vener.webp` + reflets vitraux/murs (6 fichiers, `scenes/overlays/`).
