@@ -1,6 +1,9 @@
 # Notes / Compact — reprise
 
-## EN ATTENTE DE TEST VINCENT (It40 barque + It41 prêtre + It42c danse : rig articulé assis + CSS cut-out — build vert)
+## DANSE BARQUE — EN PAUSE (It42e, décision Vincent : « on oublie cette animation pour le moment »)
+Trop de ratés successifs en test live (scintillement, mauvais détourage, rig trop grand/décalé, idle qui traînait derrière). Tout le montage danse/rig a été **retiré du site** (code + webp de public) → Myrtille redevient idle normale, zéro dédoublement, build vert. **Rien n'est perdu** : calques sources de Vincent dans `archives/rig_sources/`, méthode + pièges dans `090` (It42→It42e) et les outils `tools/build_rig_layers.py` / `build_danse_frames.py`. Reprise possible plus tard — mais NE PAS livrer sans voir le rendu navigateur (les échecs venaient de corrections à l'aveugle : dev sandbox sans navigateur headless, extension Chrome non connectée). Reprise = d'abord un moyen de VÉRIFIER le live (capture de Vincent ou Chrome connecté).
+
+## EN ATTENTE DE TEST VINCENT (It40 barque + It41 prêtre — build vert)
 **It41 — le prêtre (détail : `090`)** : église vide → il arrive en marchant (hors-champ droit, ~23-45 s après l'entrée) → quémande en boucle, dialogue à droite → OUI = bénédiction main lumineuse + sermon joyeux, il reste · NON = gueulante + dissolution fumée violette. À vérifier en test :
 1. Position/taille du prêtre (x38 y30 w20 h56 dans `scenes.js`) et point d'arrivée de la marche.
 2. Sens de la marche (il vient de la droite ; si les sprites regardent dans le mauvais sens → on flip).
@@ -9,15 +12,13 @@
 → Retours en UNE liste numérotée.
 **It40 — barque** : K7 clic=play/re-clic=stop/sortie=stop · ambiance 0.65 · voix radio (on/ouvrir/mise en route/passby) · danse : déposer `myrtille_radio_1..N.webp` + `stick_radio_1..N.webp` (même bbox que idle) + nombre de frames → 1 ligne/perso dans `scenes.js`.
 
-## CHANTIER DANSE BARQUE — CSS CUT-OUT (It42b, à tester live)
-- **Approche frame-par-frame ABANDONNÉE** (Vincent : « ça clignote, mal détouré »). Enchaîner des poses repeintes = scintillement + les modèles image ne tiennent pas la cohérence. Piège.
-- **Méthode retenue = collage cut-out animé par CSS** : la découpe idle (déjà propre) CLAQUE sur le rythme via transform `steps(1)` (snap tenu → saute), pivot assise. Zéro frame repeinte → zéro scintillement, bords nets, 0 asset.
-- **Câblage (NightDrive.svelte + scenes.js)** : `canDance:true` sur Myrtille + Stick ; `favDance:true` sur Myrtille. `$effect` → `danceLvl[id]` = 1 (toute musique) ou 2 (K7 `PINO2000`, la préférée de Myrtille). Classes `.dance-a` (1,8 s/snap, lent) / `.dance-b` (1,1 s, vif) sur `.perso`. Ne danse que depuis le repos (états roule/fume/lévite sacrés) ; stop musique = retour idle.
-- **Tempo réglable** : `animation-duration` des `.dance-a/.dance-b` + les 4 keyframes `cutout-dance`. Dire « plus lent / plus ample / plus penché ».
-- **PANTIN ARTICULÉ ASSIS — FAIT + RECALÉ (It42d)** : 4 calques fond vert de Vincent (partis de l'idle mais cadre 887×1774 ≠ idle → 1ère version trop grosse/décalée, idle visible derrière : 3 bugs). Corrigé : `tools/build_rig_layers.py` **recale automatiquement sur l'idle** (template matching d'un patch plein du visage → échelle 0.46 + offset, score 0.97) et réécrit chaque calque **dans le cadre de l'idle** (683×1382) → superposables au pixel, bonne taille. Fabrique `jambes` depuis l'idle sous l'ourlet recalé. Détourage vert (despill + plus grande composante + érosion 1px). Sources → `archives/rig_sources/`. `rig[]` sur Myrtille (scenes.js, z-order + pivots % recalés). DOM `.rig` + CSS : jambes+buste immobiles, bras+tête snappent (`steps(1)`, `--rigper` 1,8 s / 1,05 s `.rig-fast` PINO2000). **Idle caché pendant la danse** (`.rig-hidden`) → plus de dédoublement. Garde : perso riggé → pas de danse « corps entier ». Vérifié en simulation. Build vert.
-- **RÈGLE (méthode rig, à graver)** : des calques fond vert doivent être recalés sur l'idle avant montage (ils sont rarement au même cadre). `build_rig_layers.py` le fait tout seul (visage) — réutilisable pour la version debout et tout autre perso.
-- **RIG DEBOUT — à générer (prompts donnés)** : pour qu'elle danse DEBOUT (plus vif, ex. Niveau 2 PINO). Générer une Myrtille debout sur fond vert (bras écartés du corps → séparables), puis découper les mêmes calques (tête/buste/bras G/bras D + jambes) même fond vert même cadre → drop-in, je rigge à l'identique (`build_rig_layers.py`, adapter MAP + pivots).
-- Ancien `build_danse_frames.py` + `archives/danse_sources/` gardés (approche frames abandonnée).
+## DANSE BARQUE — MATÉRIEL GARDÉ POUR REPRISE (retirée du site It42e)
+Si on reprend un jour (voir bloc « EN PAUSE » plus haut, et `090` It42→It42e pour le détail + les pièges) :
+- Calques articulés de Myrtille (assise) : `archives/rig_sources/{tete,buste,brasdroit,brasgauche}.png` (fond vert).
+- `tools/build_rig_layers.py` : détoure le vert + **recale auto sur l'idle** (template matching du visage) + fabrique le calque jambes. Réutilisable pour une version debout.
+- `tools/build_danse_frames.py` + `archives/danse_sources/` : ancienne approche frame-par-frame (abandonnée, scintille).
+- Leçon clé : NE PAS livrer d'anim sans voir le rendu navigateur (les ratés = corrections à l'aveugle). Les calques fond vert doivent toujours être recalés sur l'idle avant montage.
+- Prompts version debout déjà rédigés (dans l'historique de conversation) si besoin.
 
 ## RESTE À DÉPOSER (safe-absent)
 - Halos/reflets cathédrale : `cathedrale_halo_joyeux|vener.webp` + reflets vitraux/murs (6 fichiers, `scenes/overlays/`).

@@ -143,19 +143,6 @@ export const SCENES = {
       // → tant qu'ils manquent, fallback sur idle (rien ne casse).
       // toutes les poses de Myrtille partagent la MÊME bbox (idle + 7 frames) → calage parfait, zéro saut.
       { id: 'myrtille', name: 'Myrtille', x: 35, y: 20, w: 16, h: 44, anim: 'lean',
-        canDance: true, favDance: true, // danse cut-out sur la musique ; PINO2000 = sa préférée (Niveau 2)
-        // PANTIN ARTICULÉ (assise, calques fond vert détourés → tools/build_rig_layers.py).
-        // Ordre = z (jambes derrière → tête devant). px/py = pivot en % du cadre commun
-        // (887×1774) : épaules pour les bras, nuque pour la tête. Corps immobile, seuls
-        // bras + tête snappent sur le rythme (CSS). Affiché seulement quand elle danse.
-        // calques recalés sur l'idle (tools/build_rig_layers.py) → cadre idle, pivots en %
-        rig: [
-          { part: 'jambes', src: `${S}/perso/myrtille_rig_jambes.webp`, px: 50,   py: 100  },
-          { part: 'buste',  src: `${S}/perso/myrtille_rig_buste.webp`,  px: 50,   py: 100  },
-          { part: 'brasd',  src: `${S}/perso/myrtille_rig_brasd.webp`,  px: 46.7, py: 7.7  },
-          { part: 'brasg',  src: `${S}/perso/myrtille_rig_brasg.webp`,  px: 41.3, py: 5.1  },
-          { part: 'tete',   src: `${S}/perso/myrtille_rig_tete.webp`,   px: 30.6, py: 31.5 },
-        ],
         poses: {
           idle: `${S}/perso/myrtille_idle.webp`,
           // séquence « roule un joint » : 1-4 elle roule, 5 briquet, 6 allume, 7 fume
@@ -193,7 +180,6 @@ export const SCENES = {
       // contemplatif). SEUL Stick fait monter la défonce du joueur (etat.svelte.js).
       { id: 'stick', name: 'Stick', x: 61, y: 34, w: 26, h: 46, anim: 'lean',
         shadow: { x: 64, y: 78, w: 20, h: 3.5 },
-        canDance: true, // danse cut-out sur la musique (Niveau 1)
         poses: {
           idle:  `${S}/perso/raver_roll_1.webp`,
           roll:  [1,2,3,4,5,6,7,8,9,10].map((n) => `${S}/perso/raver_roll_${n}.webp`),

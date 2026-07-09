@@ -1591,24 +1591,8 @@
   });
   const hideImg = (e) => { e.currentTarget.style.visibility = 'hidden'; };
 
-  // la boombox joue → les persos DANSENT, façon COLLAGE DÉCOUPÉ : leur découpe idle
-  // (déjà propre) CLAQUE sur le rythme en CSS — snap lent, pas de frames repeintes →
-  // zéro scintillement, bords nets. Niveau 1 = n'importe quelle musique ; Niveau 2 =
-  // PINO2000, la préférée de Myrtille (`favDance`). Ils ne dansent que depuis le repos ;
-  // états tenus (roule/fume/lévite) sacrés. Stop musique = retour idle.
-  let danceLvl = $state({}); // id -> 1 | 2
-  $effect(() => {
-    const playing = !!k7Cur || player.playing;
-    const fav = k7Cur === 'PINO2000';
-    const next = {};
-    for (const per of (SCENES[sceneTop]?.personnages ?? [])) {
-      if (!per.canDance) continue;
-      const cur = personaPose[per.id];
-      const free = cur == null && !floatState[per.id] && !smoking[per.id];
-      if (playing && free) next[per.id] = (fav && per.favDance) ? 2 : 1;
-    }
-    danceLvl = next;
-  });
+  // (danse boombox retirée It42e — reprise plus tard : calques dans archives/rig_sources,
+  //  méthode dans build_rig_layers.py + 090. Les perso restent en idle quand la K7 joue.)
   // idle ALÉATOIRE : si un perso a plusieurs poses idle (`idlePoses`), il en change
   // tout seul de temps en temps (rien tant qu'il n'y a qu'une pose idle).
   $effect(() => {
@@ -1952,28 +1936,19 @@
                   <!-- ombre-plancher (sous le perso) : réagit à la lévitation -->
                   <div class="perso-shadow" class:sh-levit={perso.anim === 'levit'} style="left:{perso.shadow.x}%; top:{perso.shadow.y}%; width:{perso.shadow.w}%; height:{perso.shadow.h}%;"></div>
                 {/if}
-                <div class="perso perso-{perso.anim}" class:solo={!!(perso.src || perso.poses)} class:smokeable={smoking[perso.id]} class:dance-a={danceLvl[perso.id] === 1 && !perso.rig} class:dance-b={danceLvl[perso.id] === 2 && !perso.rig} class:perso-float2={floatOn(perso) === 2} class:perso-float4={floatOn(perso) === 4} class:perso-float6={floatOn(perso) === 6} role="button" tabindex="-1" onclick={() => personaClick(perso)} style="left:{perso.x}%; top:{perso.y}%; width:{perso.w}%; height:{perso.h}%;">
+                <div class="perso perso-{perso.anim}" class:solo={!!(perso.src || perso.poses)} class:smokeable={smoking[perso.id]} class:perso-float2={floatOn(perso) === 2} class:perso-float4={floatOn(perso) === 4} class:perso-float6={floatOn(perso) === 6} role="button" tabindex="-1" onclick={() => personaClick(perso)} style="left:{perso.x}%; top:{perso.y}%; width:{perso.w}%; height:{perso.h}%;">
                   {#if perso.poses}
                     <!-- les FRAMES d'une séquence restent crisp (src qui change) ; le CHANGEMENT
                          DE POSE fait un fondu → la fumée de la dernière frame se DISSIPE en
                          douceur au retour à « fume ». -->
                     {#key personaPose[perso.id] ?? 'idle'}
-                      <img class="perso-src" class:rig-hidden={!!(perso.rig && danceLvl[perso.id])} src={resolvePose(perso)} alt="" draggable="false" transition:fade={{ duration: 550 }} />
+                      <img class="perso-src" src={resolvePose(perso)} alt="" draggable="false" transition:fade={{ duration: 550 }} />
                     {/key}
                   {:else if perso.src}
                     <img class="perso-src" src={perso.src} alt="" draggable="false" />
                   {:else}
                     <img class="perso-off" src={perso.off} alt="" draggable="false" />
                     <img class="perso-on" src={perso.on} alt="" draggable="false" />
-                  {/if}
-                  <!-- PANTIN ARTICULÉ : calques empilés (même cadre) par-dessus l'idle
-                       quand elle danse ; bras + tête snappent autour de leur pivot. -->
-                  {#if perso.rig && danceLvl[perso.id]}
-                    <div class="rig" class:rig-fast={danceLvl[perso.id] === 2} transition:fade={{ duration: 220 }}>
-                      {#each perso.rig as L (L.part)}
-                        <img class="rig-part rig-{L.part}" src={L.src} alt="" draggable="false" style="--px:{L.px}%; --py:{L.py}%;" />
-                      {/each}
-                    </div>
                   {/if}
                 </div>
               {/each}
@@ -5266,43 +5241,6 @@
   .perso.solo:hover .perso-src { filter: brightness(1.1) saturate(1.05) drop-shadow(0 0 8px rgba(180, 140, 255, 0.3)); }
   /* calque avant-plan (It33) : posé DEVANT les perso, ne bloque pas le clic */
   .fg-layer { position: absolute; object-fit: contain; pointer-events: none; user-select: none; -webkit-user-drag: none; }
-  /* DANSE CUT-OUT (boombox) : la découpe idle CLAQUE sur le rythme — steps(1) = pas
-     d'interpolation, chaque pose est tenue puis snappe (collage découpé), pivot assise
-     (transform-origin 50% 100% hérité de .perso). Niveau 1 lent, Niveau 2 (PINO2000) vif.
-     2 classes → priorité sur l'idle .perso-lean/-gaze. Le fond ne bouge pas : zéro scintillement. */
-  .perso.dance-a, .perso.dance-b {
-    animation-name: cutout-dance;
-    animation-timing-function: steps(1, end);
-    animation-iteration-count: infinite;
-    will-change: transform;
-  }
-  .perso.dance-a { animation-duration: 1.8s; }  /* ~0.45 s par snap : ça tombe lentement */
-  .perso.dance-b { animation-duration: 1.1s; }  /* Pino : plus vif */
-  @keyframes cutout-dance {
-    0%   { transform: translateY(0)     rotate(-3deg) scale(1);    }
-    25%  { transform: translateY(-4%)   rotate( 2deg) scale(1.03); }
-    50%  { transform: translateY(-0.5%) rotate( 3deg) scale(0.99); }
-    75%  { transform: translateY(-2.5%) rotate(-2deg) scale(1.02); }
-  }
-  @media (prefers-reduced-motion: reduce) { .perso.dance-a, .perso.dance-b { animation: none; } }
-  /* PANTIN ARTICULÉ (rig calques) : chaque pièce partage le cadre (inset:0, contain →
-     alignées) ; seuls bras + tête s'animent, autour de leur pivot (--px --py = épaule/
-     nuque). steps(1) = snap cut-out. Corps (jambes+buste) immobile. */
-  .perso-src.rig-hidden { opacity: 0; }  /* pendant la danse, le rig recouvre l'idle */
-  .rig { position: absolute; inset: 0; pointer-events: none; --rigper: 1.8s; }
-  .rig.rig-fast { --rigper: 1.05s; }  /* PINO2000 : plus vif */
-  .rig-part {
-    position: absolute; inset: 0; width: 100%; height: 100%;
-    object-fit: contain; user-select: none; -webkit-user-drag: none;
-    transform-origin: var(--px) var(--py); will-change: transform;
-  }
-  .rig-brasd { animation: rig-armR var(--rigper) steps(1, end) infinite; }
-  .rig-brasg { animation: rig-armL var(--rigper) steps(1, end) infinite; }
-  .rig-tete  { animation: rig-head var(--rigper) steps(1, end) infinite; }
-  @keyframes rig-armR { 0%{transform:rotate(-5deg)} 25%{transform:rotate(3deg)} 50%{transform:rotate(-2deg)} 75%{transform:rotate(4deg)} }
-  @keyframes rig-armL { 0%{transform:rotate(4deg)} 25%{transform:rotate(-3deg)} 50%{transform:rotate(5deg)} 75%{transform:rotate(-2deg)} }
-  @keyframes rig-head { 0%{transform:translateY(0) rotate(-2deg)} 25%{transform:translateY(-1.2%) rotate(2deg)} 50%{transform:translateY(0) rotate(-1deg)} 75%{transform:translateY(-1.6%) rotate(3deg)} }
-  @media (prefers-reduced-motion: reduce) { .rig-part { animation: none; } }
   /* idle : deux tempos différents pour casser la symétrie */
   .perso-lean { animation: perso-breathe 5.2s ease-in-out infinite; }
   .perso-gaze { animation: perso-sway 6.6s ease-in-out infinite; }
