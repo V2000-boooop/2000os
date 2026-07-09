@@ -2167,7 +2167,7 @@
 
         <!-- ============ LE PRÊCHE (pupitre de la cathédrale) ============ -->
         {#if room === 'sermon'}
-          <div class="nd-room" style="--ac:#e8c06a; --acglow:rgba(232,192,106,0.3)">
+          <div class="nd-room" class:nef={sceneTop === 'cathedrale'} style="--ac:#e8c06a; --acglow:rgba(232,192,106,0.3)">
             <div class="nd-panel">
               <div class="nd-head">
                 <span class="nd-title">LE PRÊCHE</span>
@@ -2197,7 +2197,7 @@
 
         <!-- ============ LE TRONC / LES BOUGIES (pourboire à l'artiste) ============ -->
         {#if room === 'pourboire'}
-          <div class="nd-room" style="--ac:var(--v2000-jaune-sodium); --acglow:rgba(255,178,74,0.3)">
+          <div class="nd-room" class:nef={sceneTop === 'cathedrale'} style="--ac:var(--v2000-jaune-sodium); --acglow:rgba(255,178,74,0.3)">
             <div class="nd-panel">
               <div class="nd-head">
                 <span class="nd-title">LE TRONC</span>
@@ -4684,6 +4684,10 @@
     z-index: 5;
   }
   .pmu-panel { width: min(1120px, 96vw) !important; }
+  /* RÈGLE Vincent (It42) : dans la nef, AUCUNE fenêtre ne couvre le prêtre.
+     Le prêche/le tronc glissent à droite, le voile s'allège → son anim reste visible. */
+  .nd-room.nef { justify-content: flex-end; padding-right: 3.5%; background: rgba(4, 3, 6, 0.24); }
+  .nd-room.nef .nd-panel { width: min(460px, 40vw); }
   .nd-panel {
     width: min(560px, 90vw);
     background: linear-gradient(180deg, #141018 0%, #0a0810 100%);
