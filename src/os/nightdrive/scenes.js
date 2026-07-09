@@ -218,6 +218,12 @@ export const SCENES = {
         disparition:   PF('disparition', 4),                 // fumée violette → parti
         sermon_joyeux: `${S}/perso/pretre_pose_9.webp`,      // bras ouverts
         sermon_vener:  `${S}/perso/pretre_refus_1.webp`,     // la gueulante
+        // VIE idle façon NPC 16-bit (It42) : piochées par le moteur quand il est posé
+        vie_appui:     `${S}/perso/pretre_pose_1.webp`,      // il change d'appui (la « 2e frame qui tourne »)
+        vie_tousse:    `${S}/perso/pretre_refus_2.webp`,     // main au visage (il tousse / réfléchit)
+        vie_priere:    `${S}/perso/pretre_pose_6.webp`,      // il joint les mains (tenu)
+        vie_livre:     `${S}/perso/pretre_pose_7.webp`,      // il consulte son missel (tenu)
+        vie_salut:     `${S}/perso/pretre_pose_2.webp`,      // il TE salue (4e mur, rare)
       },
       halos: {
         joyeux: [`${S}/overlays/cathedrale_halo_joyeux.webp`, `${S}/overlays/cathedrale_reflet_vitraux_joyeux.webp`, `${S}/overlays/cathedrale_reflet_murs_joyeux.webp`],

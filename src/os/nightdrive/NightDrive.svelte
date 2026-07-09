@@ -1422,7 +1422,11 @@
     clearInterval(priestSeq); clearTimeout(priestHold);
     priestPose = key; priestFrame = 0;
     const pose = priest?.poses?.[key];
-    if (!Array.isArray(pose) || pose.length < 2) return;
+    if (!Array.isArray(pose) || pose.length < 2) {
+      // pose fixe temporisée (la vie idle) : on la tient `ms` puis retour au repos
+      if (opts.ms) priestHold = setTimeout(() => { priestPose = 'idle'; priestFrame = 0; }, opts.ms);
+      return;
+    }
     const fps = opts.fps ?? 6;
     let i = 0;
     priestSeq = setInterval(() => {
@@ -1476,6 +1480,35 @@
     refusMusic = loop('cathedrale_musique_refus', 0.75);
   }
   $effect(() => { if (sceneTop !== 'cathedrale') stopRefusMusic(); });
+
+  // LA VIE À L'ANCIENNE (It42, demande Vincent) : posé en idle, le prêtre vit par
+  // petites touches façon NPC 16-bit — surtout un simple changement d'appui (la
+  // « 2e frame »), parfois un geste, rarement une vraie scénette. Pioche pondérée,
+  // toutes les 4-9 s, JAMAIS pendant marche/demande/don/refus/disparition/sermon.
+  const PRIEST_LIFE = [
+    { pose: 'vie_appui',  ms: 700,  w: 6 },  // le tic de base : il se replace
+    { pose: 'vie_tousse', ms: 950,  w: 3 },  // main au visage
+    { pose: 'vie_priere', ms: 3400, w: 2 },  // il joint les mains, un temps
+    { pose: 'vie_livre',  ms: 4200, w: 2 },  // il consulte son missel
+    { pose: 'vie_salut',  ms: 1400, w: 1 },  // il TE salue (4e mur, rare)
+  ];
+  $effect(() => {
+    if (sceneTop !== 'cathedrale' || !priest) return;
+    let t;
+    const tick = () => {
+      t = setTimeout(() => {
+        if (priestOn && priestPose === 'idle' && !coinAsk && !sermonOn) {
+          const tot = PRIEST_LIFE.reduce((s, g) => s + g.w, 0);
+          let r = Math.random() * tot;
+          const g = PRIEST_LIFE.find((x) => (r -= x.w) <= 0) ?? PRIEST_LIFE[0];
+          if (priest.poses?.[g.pose]) playPriest(g.pose, { ms: g.ms });
+        }
+        tick();
+      }, 4000 + Math.random() * 5000);
+    };
+    tick();
+    return () => clearTimeout(t);
+  });
 
   function giveCoin(yes) {
     coinAsk = false;
@@ -2014,13 +2047,13 @@
                 {/each}
               {/if}
               {#if priestOn}
-                {#key priestPose}
-                  <img class="pretre" class:pretre-demande={priestPose === 'demande'} class:pretre-marche={priestWalking}
-                       src={priestSrc(sc.priest)}
-                       style="left:{priestX ?? sc.priest.x}%; top:{sc.priest.y}%; width:{sc.priest.w}%; height:{sc.priest.h}%;
-                              {priestWalking ? `transition: left ${sc.priest.walkMs ?? 5200}ms linear, transform 550ms cubic-bezier(.2,.7,.2,1);` : ''}"
-                       alt="" draggable="false" onerror={hideImg} transition:fade={{ duration: 300 }} />
-                {/key}
+                <!-- PAS de {#key} : changer de pose est une COUPE FRANCHE (16-bit,
+                     demande Vincent It42) ; seul le perso entier fond à l'apparition. -->
+                <img class="pretre" class:pretre-demande={priestPose === 'demande'} class:pretre-marche={priestWalking}
+                     src={priestSrc(sc.priest)}
+                     style="left:{priestX ?? sc.priest.x}%; top:{sc.priest.y}%; width:{sc.priest.w}%; height:{sc.priest.h}%;
+                            {priestWalking ? `transition: left ${sc.priest.walkMs ?? 5200}ms linear, transform 550ms cubic-bezier(.2,.7,.2,1);` : ''}"
+                     alt="" draggable="false" onerror={hideImg} transition:fade={{ duration: 300 }} />
               {/if}
             {/if}
             <!-- LE SEUIL d'abord dans le DOM : les zones passent au-dessus -->
