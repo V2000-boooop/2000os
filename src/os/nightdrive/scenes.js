@@ -204,6 +204,7 @@ export const SCENES = {
     // Safe-absent : rien ne s'affiche tant que les calques ne sont pas déposés, la
     // logique tourne quand même (le dialogue « une pièce ? » marche déjà).
     priest: {
+      nom: 'Jean Paul del Papel',   // affiché façon Pokémon avant tout ce qu'il dit
       x: 38, y: 30, w: 20, h: 56,   // position finale dans la nef (à recaler sur l'image)
       enterFrom: 112,               // il ARRIVE du hors-champ droit (côté autel) en marchant
       walkMs: 5200,                 // durée de la traversée

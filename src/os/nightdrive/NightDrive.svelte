@@ -2161,11 +2161,12 @@
         {#if coinAsk}
           <!-- la fenêtre ne couvre JAMAIS le prêtre (Vincent It41) : carte poussée à droite -->
           <div class="roll-ask coin" role="dialog" aria-label="donner une pièce">
-            <div class="roll-card">
-              <span class="roll-q">Une petite pièce&nbsp;?</span>
-              <span class="roll-sub">pour l'artiste…</span>
+            <div class="roll-card npc-parle">
+              {#if priest?.nom}<span class="npc-nom">{priest.nom}</span>{/if}
+              <span class="roll-q">Qu'est-ce que tu fais encore là, toi&nbsp;?</span>
+              <span class="roll-sub">T'as pas fini de traîner&nbsp;?! Allez… file-moi ce que t'as, si tu veux rester.</span>
               <div class="roll-choices">
-                <button onclick={() => giveCoin(true)}>Donner</button>
+                <button onclick={() => giveCoin(true)}>Filer une pièce</button>
                 <button onclick={() => giveCoin(false)}>Refuser</button>
               </div>
             </div>
@@ -2215,6 +2216,7 @@
         {#if room === 'sermon'}
           <div class="nd-room" class:nef={sceneTop === 'cathedrale'} style="--ac:#e8c06a; --acglow:rgba(232,192,106,0.3)">
             <div class="nd-panel">
+              {#if sceneTop === 'cathedrale' && priest?.nom}<span class="npc-nom npc-nom-in">{priest.nom}</span>{/if}
               <div class="nd-head">
                 <span class="nd-title">LE PRÊCHE</span>
                 <span class="nd-sub">{sermonAuteur ? `— l'évangile selon ${sermonAuteur} —` : '— du haut du pupitre —'}</span>
@@ -5474,6 +5476,23 @@
   @keyframes roll-in { from { opacity: 0; } to { opacity: 1; } }
   /* la demande du prêtre : carte décalée à droite pour ne pas couvrir son anim */
   .roll-ask.coin { place-items: center end; padding-right: 6%; background: none; }
+  /* ÉTIQUETTE-NOM façon Pokémon (RÈGLE SITE, It42) : quand un personnage parle,
+     son prénom s'affiche dans une plaque accrochée au coin de sa boîte de dialogue.
+     Réutiliser .npc-nom sur toute future bulle/boîte (Stick, Myrtille, comptoir…). */
+  .npc-parle { position: relative; }
+  .npc-nom {
+    position: absolute; top: -12px; left: 10px;
+    padding: 2px 10px 3px;
+    background: linear-gradient(180deg, #1b1410, #0d0a08);
+    border: 1px solid color-mix(in srgb, var(--v2000-jaune-sodium) 60%, #000);
+    border-radius: 4px;
+    box-shadow: 0 3px 10px rgba(0,0,0,0.55);
+    color: var(--v2000-jaune-sodium);
+    font-size: 11px; letter-spacing: 0.09em; text-transform: uppercase;
+    white-space: nowrap; line-height: 1.4;
+  }
+  /* variante INTÉRIEURE (panneaux à overflow:hidden — le prêche) */
+  .npc-nom-in { position: static; display: inline-block; align-self: flex-start; margin-bottom: 7px; }
   .roll-card {
     display: flex; flex-direction: column; align-items: center; gap: 8px;
     padding: 18px 26px;
