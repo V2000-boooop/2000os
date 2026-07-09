@@ -209,6 +209,7 @@ export const SCENES = {
       walkMs: 5200,                 // durée de la traversée
       sermonZone: 'pupitre',        // cliquer le pupitre = sermon selon l'humeur mémorisée
       askAfter: [18, 40],           // secondes (aléatoire) avant son entrée + demande
+      redoAfter: [16, 26],          // après un REFUS : il revient quémander (seconde chance)
       poses: {
         idle:          `${S}/perso/pretre_idle.webp`,        // état de base (planche refus, haut-gauche — acté Vincent)
         marche:        [...PF('marche_a', 8), ...PF('marche_b', 8)], // cycle complet : 2 planches = 2 foulées (jambe G + D)

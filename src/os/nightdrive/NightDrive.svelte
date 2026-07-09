@@ -1398,8 +1398,8 @@
   // hors-champ (côté autel), s'arrête à sa place, et quémande (anim en boucle +
   // dialogue décalé pour ne pas le couvrir). OUI → bénédiction (main lumineuse) +
   // sermon joyeux, il reste dans le décor. NON → il encaisse (gueulante) puis se
-  // DISSOUT en fumée violette — plus de prêtre jusqu'à la prochaine visite.
-  // UNE demande par visite (l'ancien harcèlement périodique est retiré).
+  // DISSOUT en fumée violette… puis REVIENT quémander après `redoAfter` (seconde
+  // chance, It42) — on peut se racheter. Après un OUI : plus de demande (il reste).
   let priestMood = $state(null);    // null | 'joyeux' | 'vener' (mémorisé)
   let priestPose = $state('idle');  // idle | marche | demande | don | refus | disparition | sermon_*
   let priestFrame = $state(0);      // frame courante si la pose est une séquence
@@ -1441,27 +1441,32 @@
     }, 1000 / fps);
   }
 
-  // l'entrée : hors-champ → sa place, en marchant (une fois par visite)
+  // l'entrée : hors-champ → sa place, en marchant. Rejouable dans la même visite
+  // (seconde chance après un refus) — mais jamais deux prêtres, jamais pendant
+  // qu'une question est déjà posée.
+  let priestT, priestRedoT;
+  function priestEnter() {
+    if (sceneTop !== 'cathedrale' || !priest || priestOn || coinAsk) return;
+    priestOn = true; priestWalking = true;
+    priestX = priest.enterFrom ?? 112;
+    playPriest('marche', { fps: 8, loop: true });
+    // double rAF : l'img est posée hors-champ AVANT que la transition CSS parte
+    requestAnimationFrame(() => requestAnimationFrame(() => { priestX = priest.x; }));
+    priestWalkT = setTimeout(() => {
+      priestWalking = false; priestX = null;
+      playPriest('demande', { fps: 5, loop: true });
+      coinAsk = true;
+      playSfx('/media/nightdrive/sons/pretre_demande.wav');
+    }, priest.walkMs ?? 5200);
+  }
   $effect(() => {
     if (sceneTop !== 'cathedrale' || !priest || p !== 'drive') return;
     priestOn = false; priestX = null; priestWalking = false; coinAsk = false;
     const [a, b] = priest.askAfter ?? [18, 40];
-    const t = setTimeout(() => {
-      if (sermonOn) return;
-      priestOn = true; priestWalking = true;
-      priestX = priest.enterFrom ?? 112;
-      playPriest('marche', { fps: 8, loop: true });
-      // double rAF : l'img est posée hors-champ AVANT que la transition CSS parte
-      requestAnimationFrame(() => requestAnimationFrame(() => { priestX = priest.x; }));
-      priestWalkT = setTimeout(() => {
-        priestWalking = false; priestX = null;
-        playPriest('demande', { fps: 5, loop: true });
-        coinAsk = true;
-        playSfx('/media/nightdrive/sons/pretre_demande.wav');
-      }, priest.walkMs ?? 5200);
-    }, (a + Math.random() * (b - a)) * 1000);
+    priestT = setTimeout(() => { if (!sermonOn) priestEnter(); }, (a + Math.random() * (b - a)) * 1000);
     return () => {
-      clearTimeout(t); clearTimeout(priestWalkT); clearInterval(priestSeq); clearTimeout(priestHold);
+      clearTimeout(priestT); clearTimeout(priestRedoT); clearTimeout(priestWalkT);
+      clearInterval(priestSeq); clearTimeout(priestHold);
       clearTimeout(sermonTimer); stopSermonAudio();
       priestPose = 'idle'; priestFrame = 0; priestOn = false; priestX = null; priestWalking = false;
       coinAsk = false; sermonOn = false;
@@ -1524,7 +1529,15 @@
       setTimeout(() => playSermon('joyeux'), 900);
     } else {
       playPriest('refus', { fps: 3, then: () => {
-        playPriest('disparition', { fps: 4, then: () => { priestOn = false; priestPose = 'idle'; priestFrame = 0; } });
+        playPriest('disparition', { fps: 4, then: () => {
+          priestOn = false; priestPose = 'idle'; priestFrame = 0;
+          // SECONDE CHANCE (Vincent It42) : après un refus il REVIENT à la charge —
+          // on laisse le temps de profiter de l'expérience, mais on repropose assez
+          // tôt pour racheter sa pièce avant d'avoir réentendu la boucle vénère de
+          // trop (il peut revenir PENDANT le sermon vénère : sa voix hante déjà le lieu).
+          const [ra, rb] = priest.redoAfter ?? [16, 26];
+          priestRedoT = setTimeout(priestEnter, (ra + Math.random() * (rb - ra)) * 1000);
+        } });
       } });
       setTimeout(() => { if (priestMood === 'vener' && sceneTop === 'cathedrale' && !room && !univers) playGrogne(); }, 300); // sa pique, une fois, avec la gueulante
     }
