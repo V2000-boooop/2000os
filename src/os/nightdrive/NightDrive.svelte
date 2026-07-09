@@ -1958,7 +1958,7 @@
                          DE POSE fait un fondu → la fumée de la dernière frame se DISSIPE en
                          douceur au retour à « fume ». -->
                     {#key personaPose[perso.id] ?? 'idle'}
-                      <img class="perso-src" src={resolvePose(perso)} alt="" draggable="false" transition:fade={{ duration: 550 }} />
+                      <img class="perso-src" class:rig-hidden={!!(perso.rig && danceLvl[perso.id])} src={resolvePose(perso)} alt="" draggable="false" transition:fade={{ duration: 550 }} />
                     {/key}
                   {:else if perso.src}
                     <img class="perso-src" src={perso.src} alt="" draggable="false" />
@@ -5288,6 +5288,7 @@
   /* PANTIN ARTICULÉ (rig calques) : chaque pièce partage le cadre (inset:0, contain →
      alignées) ; seuls bras + tête s'animent, autour de leur pivot (--px --py = épaule/
      nuque). steps(1) = snap cut-out. Corps (jambes+buste) immobile. */
+  .perso-src.rig-hidden { opacity: 0; }  /* pendant la danse, le rig recouvre l'idle */
   .rig { position: absolute; inset: 0; pointer-events: none; --rigper: 1.8s; }
   .rig.rig-fast { --rigper: 1.05s; }  /* PINO2000 : plus vif */
   .rig-part {

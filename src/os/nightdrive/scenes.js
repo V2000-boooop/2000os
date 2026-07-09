@@ -148,12 +148,13 @@ export const SCENES = {
         // Ordre = z (jambes derrière → tête devant). px/py = pivot en % du cadre commun
         // (887×1774) : épaules pour les bras, nuque pour la tête. Corps immobile, seuls
         // bras + tête snappent sur le rythme (CSS). Affiché seulement quand elle danse.
+        // calques recalés sur l'idle (tools/build_rig_layers.py) → cadre idle, pivots en %
         rig: [
           { part: 'jambes', src: `${S}/perso/myrtille_rig_jambes.webp`, px: 50,   py: 100  },
           { part: 'buste',  src: `${S}/perso/myrtille_rig_buste.webp`,  px: 50,   py: 100  },
-          { part: 'brasd',  src: `${S}/perso/myrtille_rig_brasd.webp`,  px: 74.5, py: 17.2 },
-          { part: 'brasg',  src: `${S}/perso/myrtille_rig_brasg.webp`,  px: 65.5, py: 12.8 },
-          { part: 'tete',   src: `${S}/perso/myrtille_rig_tete.webp`,   px: 47.5, py: 57.6 },
+          { part: 'brasd',  src: `${S}/perso/myrtille_rig_brasd.webp`,  px: 46.7, py: 7.7  },
+          { part: 'brasg',  src: `${S}/perso/myrtille_rig_brasg.webp`,  px: 41.3, py: 5.1  },
+          { part: 'tete',   src: `${S}/perso/myrtille_rig_tete.webp`,   px: 30.6, py: 31.5 },
         ],
         poses: {
           idle: `${S}/perso/myrtille_idle.webp`,
