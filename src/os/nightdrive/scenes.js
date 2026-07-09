@@ -196,13 +196,9 @@ export const SCENES = {
     // zones mesurées sur la paire (2026-07-04). Lumières d'abord : les
     // destinations (univers dark/angélique, discours, vocaux, pourboire)
     // seront branchées aux itérations suivantes — clic = lueur en attendant.
-    // [COLLAGE] objets à états : calques peints (PNG transparents, cadrage plein
-    // écran) qui se remplacent au clic sur la zone liée. off = aucun calque (la
-    // scène de base). Ajoute des états sans toucher au code.
-    overlays: [
-      { id: 'bougies', zone: 'bougies', initial: 'off', x: 82, y: 46, w: 18, h: 32, // placé sur les cierges (flammes vers le haut)
-        states: { off: null, on: `${S}/overlays/cathedrale_bougies_on.webp` } }, // cierges éteints → allumés
-    ],
+    // [COLLAGE] retiré ici (It42) : le calque « cierges allumés » au clic faisait un
+    // effet radiant non voulu (Vincent) — la lueur au survol (lum détourée) suffit.
+    // Le moteur overlays[] reste dispo pour d'autres scènes.
     // [PRÊTRE] perso vivant à humeur (060 §2) : idle → il vient demander la pièce au
     // 4e mur → OUI = sermon joyeux (halo doré) / NON = sermon vénère (halo rouge).
     // Safe-absent : rien ne s'affiche tant que les calques ne sont pas déposés, la

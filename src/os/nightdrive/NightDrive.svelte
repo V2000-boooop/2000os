@@ -21,6 +21,7 @@
   import { CONTACTS } from './nokia.js';
   import { CASSETTES } from './cassettes.js';
   import { SERMONS } from './sermons.js';
+  import { CITATIONS } from './citations.js';
   import { POURBOIRE } from './pourboire.js';
   import { TICKET, tirerTicket } from './grattage.js';
   import { JOURNAL } from './journal.js';
@@ -691,15 +692,22 @@
   const EVT = EVENEMENT.actuel ?? EVENEMENT.vide;
   const evtVide = !EVENEMENT.actuel;
 
-  // -- le pupitre : un sermon tiré au hasard, jamais deux fois de suite --
+  // -- le pupitre : un texte tiré au hasard SELON L'HUMEUR du prêtre, jamais deux
+  //    fois de suite. Content (ou jamais dérangé) → citations.js (l'évangile selon
+  //    Céline). Vénère → ses textes à lui ; tant que Vincent n'en a pas mis,
+  //    fallback sur les sermons de comptoir (sermons.js). --
   let sermon = $state(null);
+  let sermonAuteur = $state(null);
   let lastSermon = -1;
   function preche() {
+    const c = CITATIONS[priestMood ?? 'joyeux'];
+    const pool = c?.textes?.length ? c.textes : SERMONS;
+    sermonAuteur = c?.textes?.length ? c.auteur : null;
     let i;
-    do { i = Math.floor(Math.random() * SERMONS.length); }
-    while (i === lastSermon && SERMONS.length > 1);
+    do { i = Math.floor(Math.random() * pool.length); }
+    while (i === lastSermon && pool.length > 1);
     lastSermon = i;
-    sermon = SERMONS[i];
+    sermon = pool[i];
   }
 
   // -- le journal : article de tête ouvert par défaut --
@@ -1138,7 +1146,7 @@
     const fullscreen = !!univers || cielOpen || room === 'confess';
     duckAmbiance(player.playing || fullscreen || sermonOn || !!k7Cur); // sermon ou boombox : le monde se fait murmure
   });
-  $effect(() => () => { setAmbiance(null); rsBed(null); }); // démontage de la Destination : silence ([DEMO PMU reactsound] coupe aussi le bed Web Audio)
+  $effect(() => () => { setAmbiance(null); rsBed(null); stopRefusMusic(); }); // démontage de la Destination : silence ([DEMO PMU reactsound] coupe aussi le bed Web Audio)
 
   // ---- PERSO VIVANTS : jeux de poses + réactions contextuelles --------------
   // chaque perso peut porter `poses: { idle, radio, roll, … }`. personaPose[id]
@@ -1456,10 +1464,24 @@
     };
   });
 
+  // LA MUSIQUE DU REFUS (Vincent, It40c) : refuser la pièce COUPE la musique de base
+  // du hall — la cathédrale change de visage. `cathedrale_musique_refus` tourne en
+  // boucle à sa place tant qu'on reste dans la cathédrale ; en sortir l'arrête net,
+  // et au retour l'ambiance de base reprend normalement (règle « son spatial cinéma »).
+  let refusMusic = null;
+  function stopRefusMusic() { refusMusic?.stop(); refusMusic = null; }
+  function startRefusMusic() {
+    stopRefusMusic();
+    setAmbiance(null); // la musique de base du hall s'arrête (elle reviendra au prochain changement de scène)
+    refusMusic = loop('cathedrale_musique_refus', 0.75);
+  }
+  $effect(() => { if (sceneTop !== 'cathedrale') stopRefusMusic(); });
+
   function giveCoin(yes) {
     coinAsk = false;
     priestMood = yes ? 'joyeux' : 'vener';
     playSfx(`/media/nightdrive/sons/${yes ? 'piece' : 'refus'}.wav`);
+    if (!yes) startRefusMusic();
     // OUI → la pièce tombe : BÉNÉDICTION (main lumineuse), puis sermon joyeux — il reste.
     // NON → il encaisse (gueulante → main levée) puis SE DISSOUT (fumée violette).
     //       Sa pique sonore part avec la gueulante ; sa rancune ne ressort qu'au
@@ -1993,7 +2015,7 @@
               {/if}
               {#if priestOn}
                 {#key priestPose}
-                  <img class="pretre" class:pretre-demande={priestPose === 'demande'}
+                  <img class="pretre" class:pretre-demande={priestPose === 'demande'} class:pretre-marche={priestWalking}
                        src={priestSrc(sc.priest)}
                        style="left:{priestX ?? sc.priest.x}%; top:{sc.priest.y}%; width:{sc.priest.w}%; height:{sc.priest.h}%;
                               {priestWalking ? `transition: left ${sc.priest.walkMs ?? 5200}ms linear, transform 550ms cubic-bezier(.2,.7,.2,1);` : ''}"
@@ -2149,12 +2171,13 @@
             <div class="nd-panel">
               <div class="nd-head">
                 <span class="nd-title">LE PRÊCHE</span>
-                <span class="nd-sub">— du haut du pupitre —</span>
+                <span class="nd-sub">{sermonAuteur ? `— l'évangile selon ${sermonAuteur} —` : '— du haut du pupitre —'}</span>
                 <button class="nd-close" onclick={closeRoom} title="redescendre (Échap)">✕</button>
               </div>
               {#key sermon}
                 <blockquote class="sermon">
                   {#each (sermon ?? '').split('\n') as l}<span>{l || ' '}</span>{/each}
+                  {#if sermonAuteur}<cite class="sermon-auteur">— {sermonAuteur}</cite>{/if}
                 </blockquote>
               {/key}
               <div class="sermon-act"><button class="preche-btn" onclick={preche}>✝ prêcher encore</button></div>
@@ -2948,6 +2971,9 @@
     transition: transform 550ms cubic-bezier(.2,.7,.2,1), filter 550ms;
   }
   .pretre-demande { transform: scale(1.18) translateY(3%); filter: drop-shadow(0 6px 18px #000a); }
+  /* il entre par la droite et marche vers la gauche : les frames regardent dans
+     l'autre sens → miroir pendant la marche seulement (l'arrivée reste à l'endroit) */
+  .pretre-marche { transform: scaleX(-1); }
   @media (prefers-reduced-motion: reduce) { .pretre { transition: none; } }
   /* les instruments vivants en mode peint : positions en % de la scène v2
      (quai) — mêmes classes m-*, seules les coordonnées changent */
@@ -4722,6 +4748,7 @@
   }
   .sermon span { color: #ffe9c0; font-size: 13px; line-height: 1.55; letter-spacing: 0.04em; }
   .sermon span:first-child { color: #fff3d8; font-size: 14px; }
+  .sermon-auteur { margin-top: 8px; align-self: flex-end; color: var(--ac); font-size: 12px; font-style: italic; letter-spacing: 0.06em; }
   .sermon-act { margin-top: 12px; text-align: center; }
   .preche-btn {
     color: var(--ac); font-size: 10px; letter-spacing: 0.18em;
